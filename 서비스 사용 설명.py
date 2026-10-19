@@ -1,8 +1,3 @@
-bus-priority-app/
-├── app.py
-├── requirements.txt
-└── pages/
-    └── 우선순위.py
     import json
 import re
 import streamlit as st
