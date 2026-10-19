@@ -32,7 +32,7 @@ def speak_text(text, rate=1.0):
     """
     components.html(js_code, height=0, width=0)
 
-# 4. 고대비 대형 버튼 및 전체 UI 커스텀 CSS 스타일링 (타입 에러 부분 수정됨)
+# 4. 고대비 대형 버튼 및 UI 커스텀 CSS 스타일링
 st.markdown("""
 <style>
     /* 전체 배경 고대비 검은색 처리 */
@@ -112,7 +112,7 @@ st.markdown("""
         filter: brightness(1.2);
     }
     
-    /* 카드 및 정보 안내 박스 */
+    /* 정보 안내 박스 */
     .info-card {
         background-color: #121212;
         border: 3px solid #444444;
@@ -121,7 +121,7 @@ st.markdown("""
         margin-bottom: 20px;
     }
 </style>
-""", unsafe_allow_html=True)  # <-- 오타 수정 완료
+""", unsafe_allow_html=True)
 
 # ----------------------------------------------------
 # [앱 헤더 및 타이틀]
@@ -174,25 +174,37 @@ st.markdown("---")
 st.markdown("## 📋 주요 기능 안내 및 이동")
 
 # --- 기능 1 ---
-st.markdown('<div class="info-card">', unsafe_allow_html=True)
-st.markdown("### 1️⃣ 기능 1: 버스 번호 카메라 인식 및 음성 안내")
-st.write("카메라로 다가오는 버스를 비추면 버스 번호를 자동으로 인식하여 음성으로 크게 알려줍니다.")
-st.markdown(
-    '<a href="1번링크를 넣으시오" target="_blank" class="main-feature-btn btn-feature-1">'
-    '👉 [기능 1] 버스 번호 인식 페이지로 이동'
-    '</a>',
-    unsafe_allow_html=True
-)
-st.markdown('</div>', unsafe_allow_html=True)
+card1_html = """
+<div class="info-card">
+    <h3>1️⃣ 기능 1: 버스 번호 카메라 인식 및 음성 안내</h3>
+    <p>카메라로 다가오는 버스를 비추면 버스 번호를 자동으로 인식하여 음성으로 크게 알려줍니다.</p>
+    <a href="1번링크를 넣으시오" target="_blank" class="main-feature-btn btn-feature-1">
+        👉 [기능 1] 버스 번호 인식 페이지로 이동
+    </a>
+</div>
+"""
+st.markdown(card1_html, unsafe_allow_html=True)
 
 # --- 기능 2 ---
-st.markdown('<div class="info-card">', unsafe_allow_html=True)
-st.markdown("### 2️⃣ 기능 2: 버스 승하차 예약 알림")
-st.write("타야 할 버스를 미리 선택하면 버스 기사님에게 승차 의사를 전달하고, 도착 시 진동과 음성으로 알려줍니다.")
-st.markdown(
-    '<a href="2번링크를 넣으시오" target="_blank" class="main-feature-btn btn-feature-2">'
-    '👉 [기능 2] 승하차 예약 페이지로 이동'
-    '</a>',
-    unsafe_allow_html=True
-)
-st.markdown('</div>', unsafe_allow_html=True
+card2_html = """
+<div class="info-card">
+    <h3>2️⃣ 기능 2: 버스 승하차 예약 알림</h3>
+    <p>타야 할 버스를 미리 선택하면 버스 기사님에게 승차 의사를 전달하고, 도착 시 진동과 음성으로 알려줍니다.</p>
+    <a href="2번링크를 넣으시오" target="_blank" class="main-feature-btn btn-feature-2">
+        👉 [기능 2] 승하차 예약 페이지로 이동
+    </a>
+</div>
+"""
+st.markdown(card2_html, unsafe_allow_html=True)
+
+# --- 기능 3 ---
+card3_html = """
+<div class="info-card">
+    <h3>3️⃣ 기능 3: 정류장 주변 위험 안내</h3>
+    <p>정류장 주변의 보도블록 상태, 벤치 위치, 위험 장애물을 실시간으로 감지하여 안전하게 대기하도록 돕습니다.</p>
+    <a href="3번링크를 넣으시오" target="_blank" class="main-feature-btn btn-feature-3">
+        👉 [기능 3] 주변 위험 안내 페이지로 이동
+    </a>
+</div>
+"""
+st.markdown(card3_html, unsafe_allow_html=True)
