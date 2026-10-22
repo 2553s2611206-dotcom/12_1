@@ -127,3 +127,4 @@ if st.button("🔄 정보 새로고침"):
 # 10초 후 화면 자동 갱신
 time.sleep(10)
 st.rerun()
+
