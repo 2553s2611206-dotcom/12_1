@@ -14,14 +14,13 @@ if 'speech_rate' not in st.session_state:
     st.session_state.speech_rate = 1.0  # 기본 속도 (1.0x)
 
 if 'current_step' not in st.session_state:
-    st.session_state.current_step = 1  # 1단계부터 시작
+    st.session_state.current_step = 1  # 1단계부터 정방향 시작
 
 if 'is_first_load' not in st.session_state:
     st.session_state.is_first_load = True  # 앱 첫 실행 여부
 
-# 3. 브라우저 Web Speech API(TTS) + 자동 다음 단계 전환 함수
-def speak_and_auto_next(text, rate, wait_ms=12000):
-    # f-string 내부의 JavaScript 중괄호 {{ }} 이스케이프 처리 완료
+# 3. 브라우저 Web Speech API(TTS) + 순차 자동 단계 전환 함수
+def speak_and_auto_next(text, rate, next_step_num, wait_ms=12000):
     html_content = f"""
     <script>
         (function() {{
@@ -38,16 +37,21 @@ def speak_and_auto_next(text, rate, wait_ms=12000):
                 function goToNext() {{
                     if (!hasNavigated) {{
                         hasNavigated = true;
+                        // 다음 페이지 번호를 URL 쿼리 파라미터나 rerun 방식으로 전달
+                        window.parent.postMessage({{
+                            type: 'streamlit:setComponentValue',
+                            value: {next_step_num}
+                        }}, '*');
                         window.parent.postMessage({{type: 'streamlit:rerun'}}, '*');
                     }}
                 }}
 
-                // 음성이 정상 종료된 후 지정된 시간(12초) 뒤 이동
+                // 음성이 끝난 후 12초 뒤 다음 단계 이동
                 msg.onend = function() {{
                     setTimeout(goToNext, {wait_ms});
                 }};
 
-                // 예외 상황 대비 타임아웃
+                // 재생 실패 대비 안전 타이머
                 setTimeout(goToNext, {wait_ms} + 8000);
 
                 window.speechSynthesis.speak(msg);
@@ -57,7 +61,7 @@ def speak_and_auto_next(text, rate, wait_ms=12000):
     """
     components.html(html_content, height=0, width=0)
 
-# 4. 화면 CSS 스타일링 (초고대비 대형 버튼)
+# 4. 화면 CSS 스타일링 (초대형 고대비 버튼)
 st.markdown("""
 <style>
     /* 전체 화면 배경 하얀색 설정 */
@@ -141,33 +145,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ----------------------------------------------------
-# [앱 타이틀 및 정보 표시]
+# [단계 데이터 정의 (1번 -> 2번 -> 3번 고정)]
 # ----------------------------------------------------
-st.title("🚌 시각장애인 버스 탑승 보조 안내 앱")
-st.markdown(f"### 🔊 현재 속도: **{st.session_state.speech_rate}x** | 안내 단계: **기능 {st.session_state.current_step} / 3**")
-
-# ----------------------------------------------------
-# [상단 속도 조절 버튼 (좌: 파란색 느리게 / 우: 빨간색 빠르게)]
-# ----------------------------------------------------
-col_left, col_right = st.columns(2)
-
-with col_left:
-    if st.button("🐢 음성 느리게", key="slow_btn"):
-        st.session_state.speech_rate = max(0.5, round(st.session_state.speech_rate - 0.25, 2))
-        st.rerun()
-
-with col_right:
-    if st.button("⚡ 음성 빠르게", key="fast_btn"):
-        st.session_state.speech_rate = min(2.0, round(st.session_state.speech_rate + 0.25, 2))
-        st.rerun()
-
-st.markdown("---")
-
-# ----------------------------------------------------
-# [단계별 안내 정보 데이터]
-# ----------------------------------------------------
-step = st.session_state.current_step
-
 step_data = {
     1: {
         "title": "1️⃣ 기능 1: 버스 번호 카메라 인식 및 음성 안내",
@@ -195,10 +174,42 @@ step_data = {
     }
 }
 
+# 현재 단계 확인 (1~3 범위 고정)
+step = st.session_state.current_step
+if step not in step_data:
+    step = 1
+    st.session_state.current_step = 1
+
 current_info = step_data[step]
 
+# 다음 이동할 단계 순서 계산 (1 -> 2 -> 3 -> 1 순환)
+next_step = 1 if step == 3 else step + 1
+
 # ----------------------------------------------------
-# [오프닝 멘트 포함 음성 생성 로직]
+# [앱 타이틀 및 정보 표시]
+# ----------------------------------------------------
+st.title("🚌 시각장애인 버스 탑승 보조 안내 앱")
+st.markdown(f"### 🔊 현재 속도: **{st.session_state.speech_rate}x** | 안내 단계: **기능 {step} / 3**")
+
+# ----------------------------------------------------
+# [상단 속도 조절 버튼 (좌: 파란색 느리게 / 우: 빨간색 빠르게)]
+# ----------------------------------------------------
+col_left, col_right = st.columns(2)
+
+with col_left:
+    if st.button("🐢 음성 느리게", key="slow_btn"):
+        st.session_state.speech_rate = max(0.5, round(st.session_state.speech_rate - 0.25, 2))
+        st.rerun()
+
+with col_right:
+    if st.button("⚡ 음성 빠르게", key="fast_btn"):
+        st.session_state.speech_rate = min(2.0, round(st.session_state.speech_rate + 0.25, 2))
+        st.rerun()
+
+st.markdown("---")
+
+# ----------------------------------------------------
+# [음성 멘트 준비]
 # ----------------------------------------------------
 if st.session_state.is_first_load:
     intro_text = "안녕하세요, 지금부터 안내를 도와드릴 겁니다. 안내를 듣고 원하는 기능이 나왔을 때 색깔이 있는 버튼을 눌러주세요. "
@@ -216,36 +227,3 @@ card_html = (
     '<div class="feature-card">'
     f'<h2 style="margin-top:0; font-size:32px;">{current_info["title"]}</h2>'
     f'<p style="font-size:22px; color:#222222; font-weight:bold;">{current_info["desc"]}</p>'
-    f'<a href="{current_info["link_url"]}" target="_blank" class="single-main-btn {current_info["bg_class"]}">'
-    f'{current_info["link_text"]}'
-    '</a>'
-    '</div>'
-)
-st.markdown(card_html, unsafe_allow_html=True)
-
-st.markdown("---")
-
-# ----------------------------------------------------
-# [하단 컨트롤러: 수동 조작 및 다시 듣기]
-# ----------------------------------------------------
-col_ctrl1, col_ctrl2, col_ctrl3 = st.columns([1, 1, 1])
-
-with col_ctrl1:
-    if st.button("⬅️ 이전 안내", key="prev_btn", use_container_width=True):
-        st.session_state.current_step = 3 if step == 1 else step - 1
-        st.rerun()
-
-with col_ctrl2:
-    if st.button("🔊 음성 다시 듣기", key="replay_btn", use_container_width=True):
-        speak_and_auto_next(full_script, st.session_state.speech_rate, wait_ms=12000)
-
-with col_ctrl3:
-    if st.button("다음 안내 ➡️", key="next_btn", use_container_width=True):
-        st.session_state.current_step = 1 if step == 3 else step + 1
-        st.rerun()
-
-# ----------------------------------------------------
-# [자동 단계 변경 준비 및 음성 실행]
-# ----------------------------------------------------
-st.session_state.current_step = 1 if step == 3 else step + 1
-speak_and_auto_next(full_script, st.session_state.speech_rate, wait_ms=12000)
