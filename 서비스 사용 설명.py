@@ -21,6 +21,7 @@ if 'is_first_load' not in st.session_state:
 
 # 3. 브라우저 Web Speech API(TTS) + 자동 다음 단계 전환 함수
 def speak_and_auto_next(text, rate, wait_ms=12000):
+    # f-string 내부의 JavaScript 중괄호 {{ }} 이스케이프 처리 완료
     html_content = f"""
     <script>
         (function() {{
@@ -32,23 +33,21 @@ def speak_and_auto_next(text, rate, wait_ms=12000):
                 msg.lang = 'ko-KR';
                 msg.rate = {rate};
                 
-                // 음성이 끝난 시점 또는 음성 시작 후 지정된 시간(12초) 뒤에 다음 단계로 자동 전환
                 var hasNavigated = false;
                 
                 function goToNext() {{
                     if (!hasNavigated) {{
                         hasNavigated = true;
-                        // Streamlit 화면을 자바스크립트로 새로고침하여 다음 단계로 이동시킴
-                        window.parent.postMessage({{type: 'streamlit:rerun'}, '*'});
+                        window.parent.postMessage({{type: 'streamlit:rerun'}}, '*');
                     }}
                 }}
 
-                // 음성이 끝나면 타이머 시작 (12초 후 다음 안내로 이동)
+                // 음성이 정상 종료된 후 지정된 시간(12초) 뒤 이동
                 msg.onend = function() {{
                     setTimeout(goToNext, {wait_ms});
                 }};
 
-                // 만약 음성 재생 장애 발생 대비 타임아웃 (안내문구 재생시간 고려)
+                // 예외 상황 대비 타임아웃
                 setTimeout(goToNext, {wait_ms} + 8000);
 
                 window.speechSynthesis.speak(msg);
@@ -58,7 +57,7 @@ def speak_and_auto_next(text, rate, wait_ms=12000):
     """
     components.html(html_content, height=0, width=0)
 
-# 4. 화면 CSS 스타일링 (강력한 고대비 CSS)
+# 4. 화면 CSS 스타일링 (초고대비 대형 버튼)
 st.markdown("""
 <style>
     /* 전체 화면 배경 하얀색 설정 */
@@ -202,10 +201,9 @@ current_info = step_data[step]
 # [오프닝 멘트 포함 음성 생성 로직]
 # ----------------------------------------------------
 if st.session_state.is_first_load:
-    # 앱 처음 시작할 때 웰컴 메시지를 앞에 결합하여 출력
     intro_text = "안녕하세요, 지금부터 안내를 도와드릴 겁니다. 안내를 듣고 원하는 기능이 나왔을 때 색깔이 있는 버튼을 눌러주세요. "
     full_script = intro_text + current_info["script"]
-    st.session_state.is_first_load = False  # 최초 1회 후 해제
+    st.session_state.is_first_load = False
 else:
     full_script = current_info["script"]
 
@@ -247,10 +245,7 @@ with col_ctrl3:
         st.rerun()
 
 # ----------------------------------------------------
-# [자동 음성 출력 및 단계 전환 트리거]
+# [자동 단계 변경 준비 및 음성 실행]
 # ----------------------------------------------------
-# 순환 단계 변경 로직을 미리 세션에 반영 준비
 st.session_state.current_step = 1 if step == 3 else step + 1
-
-# 음성 읽기 시작 (읽고 끝나면 12초 후 자바스크립트에 의해 자동 rerun 호출됨)
 speak_and_auto_next(full_script, st.session_state.speech_rate, wait_ms=12000)
