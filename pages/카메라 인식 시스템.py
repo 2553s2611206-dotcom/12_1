@@ -1,5 +1,5 @@
 
-import base64
+import html
 import json
 import os
 import re
@@ -8,6 +8,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 from google import genai
 from google.genai import types
+
 
 # -----------------------------
 # 기본 설정
@@ -59,6 +60,7 @@ st.markdown(
         font-size: 54px;
         font-weight: 800;
         color: #123B64;
+        overflow-wrap: anywhere;
     }
     div.stButton > button {
         min-height: 52px;
@@ -76,68 +78,110 @@ st.markdown(
     """
     <div class="hero">
       <h1>🚌 버스 번호 카메라 인식</h1>
-      <p>버스 앞면을 촬영하면 번호를 읽어 드립니다.<br>
-      천천히, 안전하게 이용해 주세요.</p>
+      <p>
+        버스 앞면을 촬영하면 번호를 읽어 드립니다.<br>
+        천천히, 안전하게 이용해 주세요.
+      </p>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
+
 # -----------------------------
-# Gemini 클라이언트
+# Gemini API 설정
 # -----------------------------
 def get_api_key():
+    """Streamlit Secrets 또는 환경 변수에서 API 키를 읽는다."""
     try:
-        return st.secrets["GEMINI_API_KEY"]
+        key = st.secrets.get("GEMINI_API_KEY", "")
     except Exception:
-        return os.getenv("GEMINI_API_KEY", "")
+        key = ""
+
+    return key or os.getenv("GEMINI_API_KEY", "")
 
 
+@st.cache_resource
+def get_gemini_client(api_key):
+    """Gemini 클라이언트를 재사용한다."""
+    return genai.Client(api_key=api_key)
+
+
+# -----------------------------
+# 버스 번호 인식
+# -----------------------------
 def recognize_bus_number(image_bytes, mime_type):
-    """이미지에서 실제 버스 번호 표시를 판독한다."""
+    """이미지에서 버스 노선 번호를 판독한다."""
     api_key = get_api_key()
+
     if not api_key:
         raise RuntimeError(
-            "API 키가 설정되지 않았습니다. "
-            "Streamlit Secrets에 GEMINI_API_KEY를 등록해 주세요."
+            "GEMINI_API_KEY가 설정되지 않았습니다. "
+            "Streamlit Cloud의 Secrets 설정을 확인해 주세요."
         )
 
-    client = genai.Client(api_key=api_key)
+    if mime_type not in (
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+    ):
+        raise RuntimeError(
+            "지원하지 않는 이미지 형식입니다. "
+            "JPG, PNG 또는 WEBP 사진을 사용해 주세요."
+        )
+
+    client = get_gemini_client(api_key)
 
     prompt = """
-당신은 시각장애인을 돕는 버스 번호 판독 도우미입니다.
+당신은 시각장애인을 돕는 버스 노선 번호 판독 도우미입니다.
 
-이미지에서 버스 전면 또는 측면의 노선 번호 표시를 확인하세요.
-사람, 광고, 차량 번호판, 정류장 표지판의 숫자를 버스 노선 번호로
-잘못 판단하지 마세요.
+규칙:
+1. 버스 전면 또는 측면의 노선 번호 표시를 확인하세요.
+2. 차량 번호판, 광고, 사람의 옷, 정류장 표지판의 숫자를
+   버스 노선 번호로 잘못 판단하지 마세요.
+3. 번호가 명확하게 읽힐 때만 반환하세요.
+4. 흐리거나 가려져 있거나 확실하지 않으면 null을 반환하세요.
+5. 여러 버스가 있고 대상이 불분명하면 null을 반환하세요.
+6. 번호를 추측하거나 만들어 내지 마세요.
+7. confidence는 high, medium, low 중 하나로 지정하세요.
+8. high는 번호 표시가 명확하게 읽힐 때만 사용하세요.
 
-명확하게 읽을 수 있는 버스 노선 번호가 하나 있을 때만 해당 번호를
-반환하세요. 이미지가 흐리거나 번호가 보이지 않으면 null을 반환하세요.
-여러 버스가 있거나 어느 버스의 번호인지 불확실하면 null을 반환하세요.
-번호를 추측하거나 만들어 내지 마세요.
+반드시 다음 JSON 형식으로 답하세요.
 
-반드시 다음 JSON 형식으로만 답하세요.
+판독 성공:
 {"bus_number": "152", "confidence": "high"}
-번호를 판독할 수 없으면:
+
+판독 불가:
 {"bus_number": null, "confidence": "low"}
 
-bus_number에는 실제 이미지에서 확인한 번호만 넣으세요.
+이미지에서 확인한 노선 번호만 반환하세요.
 """
 
-    response = client.models.generate_content(
-        model="gemini-2.5-flash-lite",
-        contents=[
-            types.Part.from_bytes(
-                data=image_bytes,
-                mime_type=mime_type,
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash-lite",
+            contents=[
+                types.Part.from_bytes(
+                    data=image_bytes,
+                    mime_type=mime_type,
+                ),
+                prompt,
+            ],
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0,
             ),
-            prompt,
-        ],
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            temperature=0,
-        ),
-    )
+        )
+    except Exception as exc:
+        # 실제 원인은 Streamlit Cloud Logs에서 확인할 수 있다.
+        print(
+            f"Gemini API error: {type(exc).__name__}: {exc}"
+        )
+        raise RuntimeError(
+            "Gemini API 요청에 실패했습니다. "
+            "API 키, 모델 접근 권한, 인터넷 연결 및 사용량을 "
+            "확인해 주세요."
+        ) from exc
 
     if not response.text:
         raise RuntimeError("AI가 판독 결과를 반환하지 않았습니다.")
@@ -145,25 +189,28 @@ bus_number에는 실제 이미지에서 확인한 번호만 넣으세요.
     try:
         result = json.loads(response.text)
     except (ValueError, TypeError) as exc:
-        raise RuntimeError("판독 결과를 해석하지 못했습니다.") from exc
+        raise RuntimeError(
+            "AI 판독 결과를 해석하지 못했습니다."
+        ) from exc
+
+    if not isinstance(result, dict):
+        return None, "low"
 
     number = result.get("bus_number")
     confidence = result.get("confidence", "low")
 
-    # 잘못된 값이나 이미지 속 임의 문장이 결과에 들어오는 것을 방지
     if not isinstance(number, str):
         return None, "low"
 
     number = number.strip()
 
-    if not number or len(number) > 12:
-        return None, "low"
-
-    # 버스 번호는 숫자와 한글/영문 지역 접두어 등만 허용
-    if not re.fullmatch(r"[0-9A-Za-z가-힣-]+", number):
-        return None, "low"
-
-    if not re.search(r"\d", number):
+    # 버스 번호 형식 검증
+    if (
+        not number
+        or len(number) > 12
+        or not re.fullmatch(r"[0-9A-Za-z가-힣-]+", number)
+        or not re.search(r"\d", number)
+    ):
         return None, "low"
 
     if confidence not in ("high", "medium", "low"):
@@ -175,21 +222,23 @@ bus_number에는 실제 이미지에서 확인한 번호만 넣으세요.
 # -----------------------------
 # 음성 안내
 # -----------------------------
-def speak(text):
-    """브라우저에서 한국어 음성 합성을 시도한다."""
+def speak(text, key="bus_voice"):
+    """브라우저의 한국어 음성 합성 기능을 사용한다."""
     safe_text = json.dumps(text, ensure_ascii=False)
 
     components.html(
         f"""
-        <div style="font-family:sans-serif; text-align:center;">
+        <div style="font-family:sans-serif;text-align:center;">
           <button id="speakBtn"
-            style="width:100%;padding:14px;font-size:18px;
-            font-weight:bold;border:0;border-radius:12px;
-            background:#123B64;color:white;cursor:pointer;">
+            style="width:100%;min-height:52px;padding:12px;
+            font-size:18px;font-weight:bold;border:0;
+            border-radius:12px;background:#123B64;color:white;
+            cursor:pointer;">
             🔊 안내 다시 듣기
           </button>
-          <p id="voiceStatus" style="font-size:14px;color:#333;">
-            음성 안내 버튼을 눌러 주세요.
+          <p id="voiceStatus" role="status"
+            style="font-size:15px;color:#222;">
+            음성 안내를 들으려면 버튼을 누르세요.
           </p>
         </div>
         <script>
@@ -205,23 +254,32 @@ def speak(text):
             }}
 
             window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(message);
+
+            const utterance =
+              new SpeechSynthesisUtterance(message);
+
             utterance.lang = "ko-KR";
             utterance.rate = 0.9;
 
             utterance.onstart = function() {{
               status.textContent = "음성 안내 중입니다.";
             }};
+
+            utterance.onend = function() {{
+              status.textContent = "음성 안내가 끝났습니다.";
+            }};
+
             utterance.onerror = function() {{
               status.textContent =
-                "음성 안내를 시작할 수 없습니다. 버튼을 다시 눌러 주세요.";
+                "음성 안내에 실패했습니다. 다시 눌러 주세요.";
             }};
 
             window.speechSynthesis.speak(utterance);
           }});
         </script>
         """,
-        height=115,
+        height=125,
+        key=key,
     )
 
 
@@ -231,22 +289,23 @@ def speak(text):
 with st.expander("📖 사용 방법", expanded=True):
     st.markdown(
         """
-        1. 가능한 안전한 위치에서 정차한 버스를 향합니다.
-        2. 아래 카메라를 열거나 버스 사진을 업로드합니다.
+        1. 안전한 위치에서 버스를 향합니다.
+        2. 카메라로 촬영하거나 사진을 업로드합니다.
         3. **버스 번호 확인하기** 버튼을 누릅니다.
         4. 결과를 확인하고 음성 안내 버튼을 누릅니다.
-        5. 번호가 보이지 않으면 위치를 조정한 뒤 다시 촬영합니다.
+        5. 번호가 불확실하면 안전한 위치에서 다시 촬영합니다.
         """
     )
 
 st.warning(
-    "안전을 위해 차도에 들어서거나 움직이는 버스를 쫓아가며 "
-    "촬영하지 마세요. 번호가 불확실하면 탑승 전에 기사님이나 "
-    "주변 사람에게 확인하세요."
+    "차도로 들어가거나 움직이는 버스를 쫓아가며 촬영하지 마세요. "
+    "인식 결과가 실제 노선과 다를 수 있으므로 탑승 전에 "
+    "기사님이나 주변 사람에게 확인해 주세요."
 )
 
+
 # -----------------------------
-# 카메라 / 사진 업로드
+# 카메라 및 사진 업로드
 # -----------------------------
 st.subheader("📷 버스 촬영")
 
@@ -259,24 +318,58 @@ uploaded_image = st.file_uploader(
     "또는 버스 사진을 선택하세요",
     type=["jpg", "jpeg", "png", "webp"],
     help="번호 표시가 선명하게 보이는 사진을 선택하세요.",
+    key="bus_upload",
 )
 
-image_source = uploaded_image if uploaded_image is not None else camera_image
+# 카메라 사진이 있으면 카메라 사진을 우선 사용한다.
+image_source = (
+    camera_image
+    if camera_image is not None
+    else uploaded_image
+)
 
+# 사진 변경 감지
 if image_source is not None:
+    image_bytes_current = image_source.getvalue()
+
+    import hashlib
+
+    current_fingerprint = hashlib.sha256(
+        image_bytes_current
+    ).hexdigest()
+
+    previous_fingerprint = st.session_state.get(
+        "image_fingerprint"
+    )
+
+    if current_fingerprint != previous_fingerprint:
+        st.session_state.pop("bus_result", None)
+        st.session_state["image_fingerprint"] = (
+            current_fingerprint
+        )
+
     st.image(
         image_source,
         caption="선택한 버스 사진",
         use_container_width=True,
     )
+else:
+    st.session_state.pop("image_fingerprint", None)
+    st.session_state.pop("bus_result", None)
 
 st.markdown("---")
 
+
+# -----------------------------
+# 판독 실행
+# -----------------------------
 if st.button("🔎 버스 번호 확인하기", type="primary"):
     if image_source is None:
         st.session_state["bus_result"] = {
             "status": "retry",
-            "message": "먼저 버스 사진을 촬영하거나 업로드해 주세요.",
+            "message": (
+                "먼저 버스 사진을 촬영하거나 업로드해 주세요."
+            ),
         }
     else:
         image_bytes = image_source.getvalue()
@@ -285,11 +378,16 @@ if st.button("🔎 버스 번호 확인하기", type="primary"):
         if len(image_bytes) > 10 * 1024 * 1024:
             st.session_state["bus_result"] = {
                 "status": "retry",
-                "message": "사진 용량이 너무 큽니다. 10MB 이하의 사진을 사용해 주세요.",
+                "message": (
+                    "사진 용량이 10MB를 초과합니다. "
+                    "더 작은 사진을 사용해 주세요."
+                ),
             }
         else:
             try:
-                with st.spinner("버스 번호를 확인하고 있습니다..."):
+                with st.spinner(
+                    "버스 번호를 확인하고 있습니다..."
+                ):
                     number, confidence = recognize_bus_number(
                         image_bytes,
                         mime_type,
@@ -300,8 +398,7 @@ if st.button("🔎 버스 번호 확인하기", type="primary"):
                         "status": "retry",
                         "message": (
                             "버스 번호를 확실하게 확인하지 못했습니다. "
-                            "버스 전면의 번호 표시가 크게 보이도록 "
-                            "다시 촬영해 주세요."
+                            "번호 표시가 크게 보이도록 다시 촬영해 주세요."
                         ),
                     }
                 else:
@@ -310,16 +407,14 @@ if st.button("🔎 버스 번호 확인하기", type="primary"):
                         "number": number,
                     }
 
-            except Exception as exc:
-                # 실제 API 키나 내부 오류 정보를 화면에 노출하지 않는다.
-                error_text = str(exc)
-                if "API 키가 설정되지 않았습니다" in error_text:
-                    message = error_text
-                else:
+            except RuntimeError as exc:
+                message = str(exc)
+
+                if "GEMINI_API_KEY가 설정되지 않았습니다" not in message:
                     message = (
-                        "번호를 확인하는 중 오류가 발생했습니다. "
-                        "인터넷 연결을 확인한 후 다시 시도해 주세요. "
-                        "문제가 반복되면 API 키와 사용량 제한을 확인해 주세요."
+                        "번호 확인 중 오류가 발생했습니다. "
+                        "인터넷 연결, API 키, 모델 접근 권한 및 "
+                        "API 사용량을 확인해 주세요."
                     )
 
                 st.session_state["bus_result"] = {
@@ -327,8 +422,22 @@ if st.button("🔎 버스 번호 확인하기", type="primary"):
                     "message": message,
                 }
 
+            except Exception as exc:
+                print(
+                    f"Unexpected error: {type(exc).__name__}: {exc}"
+                )
+
+                st.session_state["bus_result"] = {
+                    "status": "error",
+                    "message": (
+                        "예상하지 못한 오류가 발생했습니다. "
+                        "잠시 후 다시 시도해 주세요."
+                    ),
+                }
+
+
 # -----------------------------
-# 판독 결과
+# 결과 표시
 # -----------------------------
 result = st.session_state.get("bus_result")
 
@@ -338,6 +447,7 @@ if result:
 
     if result["status"] == "success":
         number = result["number"]
+        safe_number = html.escape(number)
 
         st.markdown(
             f"""
@@ -345,38 +455,48 @@ if result:
               <div style="font-size:19px;color:#333;">
                 인식된 버스 번호
               </div>
-              <div class="bus-number">{number}</div>
+              <div class="bus-number">{safe_number}</div>
               <div style="font-size:21px;color:#123B64;font-weight:700;">
-                {number}번 버스입니다.
+                {safe_number}번 버스입니다.
               </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        speak(f"{number}번 버스입니다.")
+        st.success("번호를 명확하게 판독했습니다.")
 
-        if st.button("🔄 다른 버스 확인하기"):
-            st.session_state.pop("bus_result", None)
-            st.rerun()
+        speak(
+            f"{number}번 버스입니다.",
+            key="success_voice",
+        )
 
     elif result["status"] == "retry":
         st.error("🔁 다시 촬영해 주세요")
-        st.markdown(f"### {result['message']}")
+        st.markdown(result["message"])
+
         st.info(
             "번호 표시가 화면 중앙에 오도록 하고, "
             "흔들림과 빛 반사를 줄여 촬영해 주세요."
         )
 
-        speak(result["message"])
+        speak(
+            result["message"],
+            key="retry_voice",
+        )
 
     else:
         st.error("확인 중 문제가 발생했습니다.")
         st.write(result["message"])
+
+    if st.button("🔄 다른 버스 확인하기"):
+        st.session_state.pop("bus_result", None)
+        st.session_state.pop("image_fingerprint", None)
+        st.rerun()
+
 
 st.markdown("---")
 st.caption(
     "버스 번호 카메라 인식 | 시각장애인을 위한 보조 도구 "
     "| 인식 결과는 실제 노선과 다를 수 있습니다."
 )
-
