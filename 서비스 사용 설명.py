@@ -20,38 +20,21 @@ if 'current_step' not in st.session_state:
 if 'is_first_load' not in st.session_state:
     st.session_state.is_first_load = True
 
-# 3. 브라우저 Web Speech API(TTS) + 자동 다음 단계 전환 함수
+# 3. 브라우저 Web Speech API(TTS) 함수
+# text 안에 따옴표나 줄바꿈이 있어도 JavaScript 문자열이 깨지지 않도록 처리합니다.
 def speak_and_auto_next(text, rate, wait_ms=12000):
+    import json
+
+    safe_text = json.dumps(text, ensure_ascii=False)
     html_content = f"""
     <script>
         (function() {{
             if ('speechSynthesis' in window) {{
                 window.speechSynthesis.cancel();
-
                 var msg = new SpeechSynthesisUtterance();
-                msg.text = "{text}";
+                msg.text = {safe_text};
                 msg.lang = 'ko-KR';
                 msg.rate = {rate};
-
-                var hasNavigated = false;
-
-                function goToNext() {{
-                    if (!hasNavigated) {{
-                        hasNavigated = true;
-                        window.parent.postMessage(
-                            {{type: 'streamlit:rerun'}}, '*'
-                        );
-                    }}
-                }}
-
-                // 음성이 종료되면 12초 후 이동
-                msg.onend = function() {{
-                    setTimeout(goToNext, {wait_ms});
-                }};
-
-                // 재생 실패 대비 타이머
-                setTimeout(goToNext, {wait_ms} + 8000);
-
                 window.speechSynthesis.speak(msg);
             }}
         }})();
@@ -94,3 +77,20 @@ st.markdown("""
     .st-key-slow_btn button span {
         color: #FFFFFF !important;
         font-size: 34px !important;
+        font-weight: 900 !important;
+        line-height: 1.3 !important;
+    }
+
+    .st-key-slow_btn button:hover {
+        background-color: #003FCC !important;
+        border-color: #001766 !important;
+        transform: scale(1.02);
+    }
+
+
+    /* =====================================
+       음성 빠르게 버튼 - 빨간색
+       버튼 key: fast_btn
+       ===================================== */
+
+    .st-key-fast_btn button {
