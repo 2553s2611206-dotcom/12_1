@@ -22,18 +22,18 @@ if 'auto_play' not in st.session_state:
 
 # 3. 브라우저 Web Speech API(TTS) 호출 함수
 def speak_text(text, rate):
-    html_content = """
+    html_content = f"""
     <script>
-        function speak() {
-            if ('speechSynthesis' in window) {
+        function speak() {{
+            if ('speechSynthesis' in window) {{
                 window.speechSynthesis.cancel();
                 var msg = new SpeechSynthesisUtterance();
-                msg.text = """ + f'"{text}"' + """;
+                msg.text = "{text}";
                 msg.lang = 'ko-KR';
-                msg.rate = """ + str(rate) + """;
+                msg.rate = {rate};
                 window.speechSynthesis.speak(msg);
-            }
-        }
+            }}
+        }}
         speak();
     </script>
     """
@@ -48,32 +48,33 @@ st.markdown("""
         color: #000000 !important;
     }
 
-    /* 상단 칼럼 내부 버튼 스타일 조절 (초대형 크기) */
+    /* 좌측 파란색 버튼 (음성 느리게) */
     [data-testid="column"]:nth-child(1) div.stButton > button {
         background-color: #0055FF !important;
         color: #FFFFFF !important;
-        font-size: 32px !important;
+        font-size: 38px !important;
         font-weight: 900 !important;
-        height: 140px !important;
+        height: 180px !important;
         width: 100% !important;
-        border-radius: 20px !important;
-        border: 5px solid #002288 !important;
-        box-shadow: 0px 8px 15px rgba(0, 85, 255, 0.4) !important;
+        border-radius: 25px !important;
+        border: 6px solid #002288 !important;
+        box-shadow: 0px 10px 20px rgba(0, 85, 255, 0.4) !important;
     }
 
+    /* 우측 빨간색 버튼 (음성 빠르게) */
     [data-testid="column"]:nth-child(2) div.stButton > button {
         background-color: #FF0000 !important;
         color: #FFFFFF !important;
-        font-size: 32px !important;
+        font-size: 38px !important;
         font-weight: 900 !important;
-        height: 140px !important;
+        height: 180px !important;
         width: 100% !important;
-        border-radius: 20px !important;
-        border: 5px solid #880000 !important;
-        box-shadow: 0px 8px 15px rgba(255, 0, 0, 0.4) !important;
+        border-radius: 25px !important;
+        border: 6px solid #880000 !important;
+        box-shadow: 0px 10px 20px rgba(255, 0, 0, 0.4) !important;
     }
 
-    /* 가장 큰 단일 이동 대형 버튼 */
+    /* 메인 이동 대형 버튼 스타일 */
     .single-main-btn {
         display: block;
         width: 100%;
@@ -88,7 +89,7 @@ st.markdown("""
         box-shadow: 0px 12px 24px rgba(0, 0, 0, 0.25);
         transition: transform 0.2s ease-in-out;
     }
-    
+
     /* 단계별 고대비 색상 */
     .bg-step-1 { background-color: #FFD700 !important; color: #000000 !important; }
     .bg-step-2 { background-color: #00CC55 !important; color: #FFFFFF !important; }
@@ -167,7 +168,7 @@ step_data = {
 current_info = step_data[step]
 
 # ----------------------------------------------------
-# [음성 안내 자동 실행]
+# [음성 안내 실행]
 # ----------------------------------------------------
 speak_text(current_info["script"], st.session_state.speech_rate)
 
@@ -197,7 +198,6 @@ col_ctrl1, col_ctrl2, col_ctrl3 = st.columns([1, 1, 1])
 with col_ctrl1:
     if st.button("⬅️ 이전 안내", key="prev_btn", use_container_width=True):
         st.session_state.current_step = 3 if step == 1 else step - 1
-        st.session_state.auto_play = False  # 수동 조작 시 자동 진행 중단
         st.rerun()
 
 with col_ctrl2:
@@ -207,22 +207,16 @@ with col_ctrl2:
 with col_ctrl3:
     if st.button("다음 안내 ➡️", key="next_btn", use_container_width=True):
         st.session_state.current_step = 1 if step == 3 else step + 1
-        st.session_state.auto_play = False  # 수동 조작 시 자동 진행 중단
         st.rerun()
 
 # ----------------------------------------------------
-# [1단계 -> 2단계 -> 3단계(15초 대기) 후 자동 종료 로직]
+# [10~15초 대기 후 자동으로 다음 단계로 이동하는 로직]
 # ----------------------------------------------------
 if st.session_state.auto_play:
-    if step < 3:
-        # 1, 2단계: 일반적인 음성 설명 시간 대기 후 다음 단계 이동 (약 6.5초)
-        wait_seconds = 6.5 / st.session_state.speech_rate
-        time.sleep(wait_seconds)
-        st.session_state.current_step += 1
-        st.rerun()
-    elif step == 3:
-        # 3단계(마지막 기능): 음성 설명 후 사용자가 버튼을 누를 수 있도록 15초 동안 대기
-        time.sleep(15)
-        # 15초 대기 후 자동 재생 종료
-        st.session_state.auto_play = False
-        st.rerun()
+    # 음성 재생 시간 + 대기 시간을 고려하여 12초간 대기 후 다음 단계로 전환
+    WAIT_TIME = 12  
+    time.sleep(WAIT_TIME)
+    
+    # 1단계 -> 2단계 -> 3단계 -> 다시 1단계 순환
+    st.session_state.current_step = 1 if step == 3 else step + 1
+    st.rerun()
