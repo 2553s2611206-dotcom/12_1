@@ -211,7 +211,7 @@ else:
     full_script = current_info["script"]
 
 # ----------------------------------------------------
-# [중앙 메인 가변 대형 버튼 UI (오류 수정 지점)]
+# [중앙 메인 가변 대형 버튼 UI]
 # ----------------------------------------------------
 st.markdown("## 📋 현재 음성 설명 중인 기능")
 
@@ -234,3 +234,23 @@ st.markdown("---")
 col_ctrl1, col_ctrl2, col_ctrl3 = st.columns([1, 1, 1])
 
 with col_ctrl1:
+    if st.button("⬅️ 이전 안내", key="prev_btn", use_container_width=True):
+        st.session_state.current_step = 3 if step == 1 else step - 1
+        st.rerun()
+
+with col_ctrl2:
+    if st.button("🔊 음성 다시 듣기", key="replay_btn", use_container_width=True):
+        speak_and_auto_next(full_script, st.session_state.speech_rate, wait_ms=12000)
+
+with col_ctrl3:
+    if st.button("다음 안내 ➡️", key="next_btn", use_container_width=True):
+        st.session_state.current_step = 1 if step == 3 else step + 1
+        st.rerun()
+
+# ----------------------------------------------------
+# [다음 실행 시 적용할 단계(1 -> 2 -> 3 -> 1) 세션 반영]
+# ----------------------------------------------------
+st.session_state.current_step = 1 if step == 3 else step + 1
+
+# 음성 자동 실행 및 12초 후 화면 갱신
+speak_and_auto_next(full_script, st.session_state.speech_rate, wait_ms=12000)
