@@ -241,7 +241,7 @@ step_data = {
         "desc": "카메라로 다가오는 버스를 비추면 버스 번호를 자동으로 인식하여 음성으로 알려줍니다.",
         "script": "기능 1번 안내입니다. 다가오는 버스 번호를 카메라로 인식합니다. 아래의 큰 버튼을 누르면 기능 1번 페이지로 이동합니다.",
         "link_text": "👉 [기능 1] 버스 번호 인식 페이지로 이동하기",
-        "link_url": "1번링크를 넣으시오",
+        "link_url": "https://blindbus.streamlit.app/%EC%9A%B0%EC%84%A0%EC%88%9C%EC%9C%84",
         "bg_class": "bg-step-1"
     },
     2: {
@@ -249,7 +249,7 @@ step_data = {
         "desc": "타야 할 버스를 미리 선택하면 기사님에게 승차 의사를 전달하고 도착 시 알려줍니다.",
         "script": "기능 2번 안내입니다. 버스 승하차 예약을 돕는 기능입니다. 아래의 큰 버튼을 누르면 기능 2번 페이지로 이동합니다.",
         "link_text": "👉 [기능 2] 승하차 예약 페이지로 이동하기",
-        "link_url": "2번링크를 넣으시오",
+        "link_url": "https://blindbus.streamlit.app/%EC%B9%B4%EB%A9%94%EB%9D%BC_%EC%9D%B8%EC%8B%9D_%EC%8B%9C%EC%8A%A4%ED%85%9C",
         "bg_class": "bg-step-2"
     },
     3: {
