@@ -22,9 +22,11 @@ if 'auto_play' not in st.session_state:
 
 # 3. 브라우저 Web Speech API(TTS) 호출 함수
 def speak_text(text, rate):
+    # 타임스탬프를 부여하여 매번 새로운 스크립트로 실행되도록 처리
+    timestamp = int(time.time() * 1000)
     html_content = f"""
-    <script>
-        function speak() {{
+    <script id="tts-{timestamp}">
+        (function() {{
             if ('speechSynthesis' in window) {{
                 window.speechSynthesis.cancel();
                 var msg = new SpeechSynthesisUtterance();
@@ -33,13 +35,12 @@ def speak_text(text, rate):
                 msg.rate = {rate};
                 window.speechSynthesis.speak(msg);
             }}
-        }}
-        speak();
+        }})();
     </script>
     """
     components.html(html_content, height=0, width=0)
 
-# 4. 화면 CSS 스타일링 (하얀 배경, 파란색/빨간색 초고대비 대형 버튼)
+# 4. 화면 CSS 스타일링 (강력한 CSS 선택자 적용)
 st.markdown("""
 <style>
     /* 전체 화면 배경 하얀색 설정 */
@@ -48,30 +49,38 @@ st.markdown("""
         color: #000000 !important;
     }
 
-    /* 좌측 파란색 버튼 (음성 느리게) */
-    [data-testid="column"]:nth-child(1) div.stButton > button {
+    /* 좌측 파란색 버튼 (음성 느리게) 초대형 설정 */
+    [data-testid="column"]:nth-child(1) button,
+    [data-testid="column"]:nth-child(1) button * {
         background-color: #0055FF !important;
         color: #FFFFFF !important;
-        font-size: 38px !important;
+        font-size: 45px !important;
         font-weight: 900 !important;
-        height: 180px !important;
+    }
+    
+    [data-testid="column"]:nth-child(1) button {
+        height: 220px !important;
         width: 100% !important;
-        border-radius: 25px !important;
-        border: 6px solid #002288 !important;
-        box-shadow: 0px 10px 20px rgba(0, 85, 255, 0.4) !important;
+        border-radius: 30px !important;
+        border: 8px solid #002288 !important;
+        box-shadow: 0px 12px 25px rgba(0, 85, 255, 0.5) !important;
     }
 
-    /* 우측 빨간색 버튼 (음성 빠르게) */
-    [data-testid="column"]:nth-child(2) div.stButton > button {
+    /* 우측 빨간색 버튼 (음성 빠르게) 초대형 설정 */
+    [data-testid="column"]:nth-child(2) button,
+    [data-testid="column"]:nth-child(2) button * {
         background-color: #FF0000 !important;
         color: #FFFFFF !important;
-        font-size: 38px !important;
+        font-size: 45px !important;
         font-weight: 900 !important;
-        height: 180px !important;
+    }
+
+    [data-testid="column"]:nth-child(2) button {
+        height: 220px !important;
         width: 100% !important;
-        border-radius: 25px !important;
-        border: 6px solid #880000 !important;
-        box-shadow: 0px 10px 20px rgba(255, 0, 0, 0.4) !important;
+        border-radius: 30px !important;
+        border: 8px solid #880000 !important;
+        box-shadow: 0px 12px 25px rgba(255, 0, 0, 0.5) !important;
     }
 
     /* 메인 이동 대형 버튼 스타일 */
@@ -80,12 +89,12 @@ st.markdown("""
         width: 100%;
         padding: 45px 20px;
         margin: 20px 0;
-        font-size: 36px;
+        font-size: 38px;
         font-weight: 900;
         text-align: center;
         text-decoration: none;
         border-radius: 30px;
-        border: 5px solid #000000;
+        border: 6px solid #000000;
         box-shadow: 0px 12px 24px rgba(0, 0, 0, 0.25);
         transition: transform 0.2s ease-in-out;
     }
@@ -102,7 +111,7 @@ st.markdown("""
     /* 안내 박스 스타일 */
     .feature-card {
         background-color: #F0F4F8;
-        border: 4px solid #111111;
+        border: 5px solid #111111;
         border-radius: 25px;
         padding: 30px;
         margin-top: 10px;
@@ -210,10 +219,10 @@ with col_ctrl3:
         st.rerun()
 
 # ----------------------------------------------------
-# [10~15초 대기 후 자동으로 다음 단계로 이동하는 로직]
+# [12초 대기 후 자동으로 다음 단계로 이동하는 로직]
 # ----------------------------------------------------
 if st.session_state.auto_play:
-    # 음성 재생 시간 + 대기 시간을 고려하여 12초간 대기 후 다음 단계로 전환
+    # 음성이 정상 실행된 후 대기하도록 12초 설정
     WAIT_TIME = 12  
     time.sleep(WAIT_TIME)
     
