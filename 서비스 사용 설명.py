@@ -1,6 +1,5 @@
 import streamlit as st
 import streamlit.components.v1 as components
-import time
 
 # 1. 페이지 기본 설정 (와이드 레이아웃)
 st.set_page_config(
@@ -17,22 +16,41 @@ if 'speech_rate' not in st.session_state:
 if 'current_step' not in st.session_state:
     st.session_state.current_step = 1  # 1단계부터 시작
 
-if 'auto_play' not in st.session_state:
-    st.session_state.auto_play = True  # 자동 연속 안내 활성화 여부
+if 'is_first_load' not in st.session_state:
+    st.session_state.is_first_load = True  # 앱 첫 실행 여부
 
-# 3. 브라우저 Web Speech API(TTS) 호출 함수
-def speak_text(text, rate):
-    # 타임스탬프를 부여하여 매번 새로운 스크립트로 실행되도록 처리
-    timestamp = int(time.time() * 1000)
+# 3. 브라우저 Web Speech API(TTS) + 자동 다음 단계 전환 함수
+def speak_and_auto_next(text, rate, wait_ms=12000):
     html_content = f"""
-    <script id="tts-{timestamp}">
+    <script>
         (function() {{
             if ('speechSynthesis' in window) {{
                 window.speechSynthesis.cancel();
+                
                 var msg = new SpeechSynthesisUtterance();
                 msg.text = "{text}";
                 msg.lang = 'ko-KR';
                 msg.rate = {rate};
+                
+                // 음성이 끝난 시점 또는 음성 시작 후 지정된 시간(12초) 뒤에 다음 단계로 자동 전환
+                var hasNavigated = false;
+                
+                function goToNext() {{
+                    if (!hasNavigated) {{
+                        hasNavigated = true;
+                        // Streamlit 화면을 자바스크립트로 새로고침하여 다음 단계로 이동시킴
+                        window.parent.postMessage({{type: 'streamlit:rerun'}, '*'});
+                    }}
+                }}
+
+                // 음성이 끝나면 타이머 시작 (12초 후 다음 안내로 이동)
+                msg.onend = function() {{
+                    setTimeout(goToNext, {wait_ms});
+                }};
+
+                // 만약 음성 재생 장애 발생 대비 타임아웃 (안내문구 재생시간 고려)
+                setTimeout(goToNext, {wait_ms} + 8000);
+
                 window.speechSynthesis.speak(msg);
             }}
         }})();
@@ -40,7 +58,7 @@ def speak_text(text, rate):
     """
     components.html(html_content, height=0, width=0)
 
-# 4. 화면 CSS 스타일링 (강력한 CSS 선택자 적용)
+# 4. 화면 CSS 스타일링 (강력한 고대비 CSS)
 st.markdown("""
 <style>
     /* 전체 화면 배경 하얀색 설정 */
@@ -50,37 +68,41 @@ st.markdown("""
     }
 
     /* 좌측 파란색 버튼 (음성 느리게) 초대형 설정 */
-    [data-testid="column"]:nth-child(1) button,
-    [data-testid="column"]:nth-child(1) button * {
+    [data-testid="column"]:nth-child(1) button {
         background-color: #0055FF !important;
         color: #FFFFFF !important;
-        font-size: 45px !important;
-        font-weight: 900 !important;
-    }
-    
-    [data-testid="column"]:nth-child(1) button {
         height: 220px !important;
         width: 100% !important;
         border-radius: 30px !important;
         border: 8px solid #002288 !important;
         box-shadow: 0px 12px 25px rgba(0, 85, 255, 0.5) !important;
     }
-
-    /* 우측 빨간색 버튼 (음성 빠르게) 초대형 설정 */
-    [data-testid="column"]:nth-child(2) button,
-    [data-testid="column"]:nth-child(2) button * {
-        background-color: #FF0000 !important;
-        color: #FFFFFF !important;
+    
+    [data-testid="column"]:nth-child(1) button p,
+    [data-testid="column"]:nth-child(1) button div,
+    [data-testid="column"]:nth-child(1) button span {
         font-size: 45px !important;
         font-weight: 900 !important;
+        color: #FFFFFF !important;
     }
 
+    /* 우측 빨간색 버튼 (음성 빠르게) 초대형 설정 */
     [data-testid="column"]:nth-child(2) button {
+        background-color: #FF0000 !important;
+        color: #FFFFFF !important;
         height: 220px !important;
         width: 100% !important;
         border-radius: 30px !important;
         border: 8px solid #880000 !important;
         box-shadow: 0px 12px 25px rgba(255, 0, 0, 0.5) !important;
+    }
+
+    [data-testid="column"]:nth-child(2) button p,
+    [data-testid="column"]:nth-child(2) button div,
+    [data-testid="column"]:nth-child(2) button span {
+        font-size: 45px !important;
+        font-weight: 900 !important;
+        color: #FFFFFF !important;
     }
 
     /* 메인 이동 대형 버튼 스타일 */
@@ -177,9 +199,15 @@ step_data = {
 current_info = step_data[step]
 
 # ----------------------------------------------------
-# [음성 안내 실행]
+# [오프닝 멘트 포함 음성 생성 로직]
 # ----------------------------------------------------
-speak_text(current_info["script"], st.session_state.speech_rate)
+if st.session_state.is_first_load:
+    # 앱 처음 시작할 때 웰컴 메시지를 앞에 결합하여 출력
+    intro_text = "안녕하세요, 지금부터 안내를 도와드릴 겁니다. 안내를 듣고 원하는 기능이 나왔을 때 색깔이 있는 버튼을 눌러주세요. "
+    full_script = intro_text + current_info["script"]
+    st.session_state.is_first_load = False  # 최초 1회 후 해제
+else:
+    full_script = current_info["script"]
 
 # ----------------------------------------------------
 # [중앙 메인 가변 대형 버튼 UI]
@@ -211,7 +239,7 @@ with col_ctrl1:
 
 with col_ctrl2:
     if st.button("🔊 음성 다시 듣기", key="replay_btn", use_container_width=True):
-        speak_text(current_info["script"], st.session_state.speech_rate)
+        speak_and_auto_next(full_script, st.session_state.speech_rate, wait_ms=12000)
 
 with col_ctrl3:
     if st.button("다음 안내 ➡️", key="next_btn", use_container_width=True):
@@ -219,13 +247,10 @@ with col_ctrl3:
         st.rerun()
 
 # ----------------------------------------------------
-# [12초 대기 후 자동으로 다음 단계로 이동하는 로직]
+# [자동 음성 출력 및 단계 전환 트리거]
 # ----------------------------------------------------
-if st.session_state.auto_play:
-    # 음성이 정상 실행된 후 대기하도록 12초 설정
-    WAIT_TIME = 12  
-    time.sleep(WAIT_TIME)
-    
-    # 1단계 -> 2단계 -> 3단계 -> 다시 1단계 순환
-    st.session_state.current_step = 1 if step == 3 else step + 1
-    st.rerun()
+# 순환 단계 변경 로직을 미리 세션에 반영 준비
+st.session_state.current_step = 1 if step == 3 else step + 1
+
+# 음성 읽기 시작 (읽고 끝나면 12초 후 자바스크립트에 의해 자동 rerun 호출됨)
+speak_and_auto_next(full_script, st.session_state.speech_rate, wait_ms=12000)
