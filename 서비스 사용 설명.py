@@ -44,7 +44,7 @@ def speak_text(text, rate=1.0):
     components.html(html_code, height=0, width=0)
 
 
-# 4. 전체 디자인 CSS
+# 4. 전체 CSS 디자인
 st.markdown(
     """
     <style>
@@ -58,7 +58,7 @@ st.markdown(
         color: #000000;
     }
 
-    /* 음성 조절 버튼 공통 */
+    /* 음성 조절 버튼 공통 디자인 */
     div.st-key-slow_btn button,
     div.st-key-fast_btn button {
         width: 100% !important;
@@ -124,7 +124,6 @@ st.markdown(
         padding: 24px !important;
         margin-top: 15px !important;
         margin-bottom: 20px !important;
-        color: #FFFFFF !important;
         border: 5px solid #222222 !important;
         border-radius: 22px !important;
         font-size: 30px !important;
@@ -137,14 +136,13 @@ st.markdown(
 
     /* 기능 페이지 버튼 내부 글자 */
     div[data-testid="stPageLink"] a p {
-        color: #FFFFFF !important;
         font-size: 30px !important;
         font-weight: 900 !important;
         line-height: 1.5 !important;
         margin: 0 !important;
     }
 
-    /* 하단 이전/다시 듣기/다음 버튼 */
+    /* 하단 안내 버튼 */
     div.st-key-prev_btn button,
     div.st-key-replay_btn button,
     div.st-key-next_btn button {
@@ -155,7 +153,7 @@ st.markdown(
         border-radius: 15px !important;
     }
 
-    /* 현재 상태 */
+    /* 현재 안내 상태 */
     .status-text {
         text-align: center;
         font-size: 22px;
@@ -287,7 +285,7 @@ speak_text(
     st.session_state.speech_rate
 )
 
-# 설명 카드
+# 기능 설명 카드
 st.markdown(
     f"""
     <div class="feature-card">
@@ -305,29 +303,34 @@ st.markdown(
 
 # 9. 기능별 이동 버튼 색상
 if step == 1:
-    # 기능 1: 파란색
-    button_color = "#0057D9"
-    button_hover_color = "#003FA8"
-    button_border_color = "#003580"
-
+    # 기능 1: 노란색 배경 + 검은색 글씨
     st.markdown(
-        f"""
+        """
         <style>
-        div[data-testid="stPageLink"] a,
-        div[data-testid="stPageLink"] a:visited {{
-            background-color: {button_color} !important;
-            color: #FFFFFF !important;
-            border-color: {button_border_color} !important;
-        }}
+        div[data-testid="stPageLink"] a {
+            background-color: #FFD600 !important;
+            color: #000000 !important;
+            border-color: #8A6500 !important;
+        }
 
-        div[data-testid="stPageLink"] a:hover {{
-            background-color: {button_hover_color} !important;
-            color: #FFFFFF !important;
-        }}
+        div[data-testid="stPageLink"] a p {
+            color: #000000 !important;
+        }
 
-        div[data-testid="stPageLink"] a p {{
-            color: #FFFFFF !important;
-        }}
+        div[data-testid="stPageLink"] a:hover {
+            background-color: #FFC400 !important;
+            color: #000000 !important;
+            border-color: #5C4300 !important;
+        }
+
+        div[data-testid="stPageLink"] a:hover p {
+            color: #000000 !important;
+        }
+
+        div[data-testid="stPageLink"] a:focus-visible {
+            outline: 5px solid #0057D9 !important;
+            outline-offset: 5px !important;
+        }
         </style>
         """,
         unsafe_allow_html=True
@@ -341,29 +344,34 @@ if step == 1:
     )
 
 else:
-    # 기능 2: 초록색
-    button_color = "#008044"
-    button_hover_color = "#005C31"
-    button_border_color = "#004D2A"
-
+    # 기능 2: 초록색 배경 + 흰색 글씨
     st.markdown(
-        f"""
+        """
         <style>
-        div[data-testid="stPageLink"] a,
-        div[data-testid="stPageLink"] a:visited {{
-            background-color: {button_color} !important;
+        div[data-testid="stPageLink"] a {
+            background-color: #008044 !important;
             color: #FFFFFF !important;
-            border-color: {button_border_color} !important;
-        }}
+            border-color: #004D2A !important;
+        }
 
-        div[data-testid="stPageLink"] a:hover {{
-            background-color: {button_hover_color} !important;
+        div[data-testid="stPageLink"] a p {
             color: #FFFFFF !important;
-        }}
+        }
 
-        div[data-testid="stPageLink"] a p {{
+        div[data-testid="stPageLink"] a:hover {
+            background-color: #005C31 !important;
             color: #FFFFFF !important;
-        }}
+            border-color: #00351C !important;
+        }
+
+        div[data-testid="stPageLink"] a:hover p {
+            color: #FFFFFF !important;
+        }
+
+        div[data-testid="stPageLink"] a:focus-visible {
+            outline: 5px solid #FFB000 !important;
+            outline-offset: 5px !important;
+        }
         </style>
         """,
         unsafe_allow_html=True
