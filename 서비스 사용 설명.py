@@ -44,7 +44,7 @@ def speak_text(text, rate=1.0):
     components.html(html_code, height=0, width=0)
 
 
-# 4. 전체 CSS 디자인
+# 4. 전체 디자인 CSS
 st.markdown(
     """
     <style>
@@ -58,7 +58,7 @@ st.markdown(
         color: #000000;
     }
 
-    /* 음성 조절 버튼 공통 디자인 */
+    /* 음성 조절 버튼 공통 */
     div.st-key-slow_btn button,
     div.st-key-fast_btn button {
         width: 100% !important;
@@ -87,7 +87,7 @@ st.markdown(
         border: 5px solid #990000 !important;
     }
 
-    /* 기능 안내 카드 */
+    /* 기능 설명 카드 */
     .feature-card {
         background-color: #F5F8FF;
         border: 4px solid #222222;
@@ -113,37 +113,29 @@ st.markdown(
         font-weight: 700;
     }
 
-    /* 기능 1, 2 페이지 이동 버튼 */
+    /* 기능 페이지 이동 버튼 공통 디자인 */
     div[data-testid="stPageLink"] a {
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
-
         width: 100% !important;
         min-height: 120px !important;
         box-sizing: border-box !important;
-
         padding: 24px !important;
         margin-top: 15px !important;
         margin-bottom: 20px !important;
-
-        background: #0057D9 !important;
-        background-color: #0057D9 !important;
         color: #FFFFFF !important;
-
-        border: 5px solid #003580 !important;
+        border: 5px solid #222222 !important;
         border-radius: 22px !important;
-
         font-size: 30px !important;
         font-weight: 900 !important;
         line-height: 1.5 !important;
         text-align: center !important;
         text-decoration: none !important;
-
-        box-shadow: 0 6px 0 #00245C !important;
+        box-shadow: 0 6px 0 rgba(0, 0, 0, 0.35) !important;
     }
 
-    /* 버튼 내부 텍스트 */
+    /* 기능 페이지 버튼 내부 글자 */
     div[data-testid="stPageLink"] a p {
         color: #FFFFFF !important;
         font-size: 30px !important;
@@ -152,25 +144,7 @@ st.markdown(
         margin: 0 !important;
     }
 
-    /* 마우스를 올렸을 때 */
-    div[data-testid="stPageLink"] a:hover {
-        background: #003FA8 !important;
-        background-color: #003FA8 !important;
-        color: #FFFFFF !important;
-        border-color: #001F5C !important;
-    }
-
-    div[data-testid="stPageLink"] a:hover p {
-        color: #FFFFFF !important;
-    }
-
-    /* 키보드 포커스 */
-    div[data-testid="stPageLink"] a:focus-visible {
-        outline: 5px solid #FFB000 !important;
-        outline-offset: 5px !important;
-    }
-
-    /* 하단 이전, 다시 듣기, 다음 버튼 */
+    /* 하단 이전/다시 듣기/다음 버튼 */
     div.st-key-prev_btn button,
     div.st-key-replay_btn button,
     div.st-key-next_btn button {
@@ -181,7 +155,7 @@ st.markdown(
         border-radius: 15px !important;
     }
 
-    /* 현재 안내 상태 */
+    /* 현재 상태 */
     .status-text {
         text-align: center;
         font-size: 22px;
@@ -329,16 +303,72 @@ st.markdown(
 )
 
 
-# 9. 기능 페이지 이동 버튼
-# GitHub의 pages 폴더 안에 있는 실제 파일 경로 사용
+# 9. 기능별 이동 버튼 색상
 if step == 1:
+    # 기능 1: 파란색
+    button_color = "#0057D9"
+    button_hover_color = "#003FA8"
+    button_border_color = "#003580"
+
+    st.markdown(
+        f"""
+        <style>
+        div[data-testid="stPageLink"] a,
+        div[data-testid="stPageLink"] a:visited {{
+            background-color: {button_color} !important;
+            color: #FFFFFF !important;
+            border-color: {button_border_color} !important;
+        }}
+
+        div[data-testid="stPageLink"] a:hover {{
+            background-color: {button_hover_color} !important;
+            color: #FFFFFF !important;
+        }}
+
+        div[data-testid="stPageLink"] a p {{
+            color: #FFFFFF !important;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
     st.page_link(
         "pages/우선순위.py",
         label="기능 1: 목적지 입력 및 버스 안내 페이지로 이동하기",
         icon="🚌",
         use_container_width=True
     )
+
 else:
+    # 기능 2: 초록색
+    button_color = "#008044"
+    button_hover_color = "#005C31"
+    button_border_color = "#004D2A"
+
+    st.markdown(
+        f"""
+        <style>
+        div[data-testid="stPageLink"] a,
+        div[data-testid="stPageLink"] a:visited {{
+            background-color: {button_color} !important;
+            color: #FFFFFF !important;
+            border-color: {button_border_color} !important;
+        }}
+
+        div[data-testid="stPageLink"] a:hover {{
+            background-color: {button_hover_color} !important;
+            color: #FFFFFF !important;
+        }}
+
+        div[data-testid="stPageLink"] a p {{
+            color: #FFFFFF !important;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
     st.page_link(
         "pages/카메라 인식 시스템.py",
         label="기능 2: 카메라 버스 번호 인식 페이지로 이동하기",
