@@ -1,3 +1,4 @@
+
 import streamlit as st
 import streamlit.components.v1 as components
 import time
@@ -49,26 +50,40 @@ st.markdown("""
         color: #000000 !important;
     }
 
-    [data-testid="column"]:nth-child(1) div.stButton > button {
-        background-color: #0055FF !important;
-        color: #FFFFFF !important;
+    /* 음성 느리게 버튼 - 파란색 */
+    div[data-testid="stHorizontalBlock"]:has(
+        button[key="slow_btn"]
+    ) {
+        width: 100%;
+    }
+
+    /* 상단 속도 조절 버튼 공통 스타일 */
+    div[data-testid="stHorizontalBlock"]:has(
+        button[key="slow_btn"]
+    ) div[data-testid="column"] div.stButton > button {
         font-size: 38px !important;
         font-weight: 900 !important;
         height: 180px !important;
         width: 100% !important;
         border-radius: 25px !important;
+    }
+
+    /* 파란색 느리게 버튼 */
+    div[data-testid="stHorizontalBlock"]:has(
+        button[key="slow_btn"]
+    ) div[data-testid="column"]:first-child div.stButton > button {
+        background-color: #0055FF !important;
+        color: #FFFFFF !important;
         border: 6px solid #002288 !important;
         box-shadow: 0px 10px 20px rgba(0, 85, 255, 0.4) !important;
     }
 
-    [data-testid="column"]:nth-child(2) div.stButton > button {
+    /* 빨간색 빠르게 버튼 */
+    div[data-testid="stHorizontalBlock"]:has(
+        button[key="fast_btn"]
+    ) div[data-testid="column"]:nth-child(2) div.stButton > button {
         background-color: #FF0000 !important;
         color: #FFFFFF !important;
-        font-size: 38px !important;
-        font-weight: 900 !important;
-        height: 180px !important;
-        width: 100% !important;
-        border-radius: 25px !important;
         border: 6px solid #880000 !important;
         box-shadow: 0px 10px 20px rgba(255, 0, 0, 0.4) !important;
     }
@@ -202,7 +217,6 @@ current_info = step_data[step]
 # ----------------------------------------------------
 # 음성 안내 실행
 # ----------------------------------------------------
-# 화면이 새로고침될 때마다 음성이 자동으로 재생됩니다.
 speak_text(
     current_info["script"],
     st.session_state.speech_rate
