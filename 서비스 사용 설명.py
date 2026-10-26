@@ -89,7 +89,7 @@ st.markdown(
 
     /* 기능 설명 카드 */
     .feature-card {
-        background-color: #F5F8FF;
+        background-color: #FFFF00;
         border: 4px solid #222222;
         border-radius: 24px;
         padding: 35px;
