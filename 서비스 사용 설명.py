@@ -70,20 +70,16 @@ st.markdown(
         opacity: 1 !important;
     }
 
-    /* 음성 느리게 버튼: 파란색 */
-    div.st-key-slow_btn button,
-    div.st-key-slow_btn button[kind="secondary"],
-    div.st-key-slow_btn button[kind="primary"] {
+    /* 음성 느리게 - 파란색 */
+    div.st-key-slow_btn button {
         background: #0055FF !important;
         background-color: #0055FF !important;
         color: #FFFFFF !important;
         border: 5px solid #003399 !important;
     }
 
-    /* 음성 빠르게 버튼: 빨간색 */
-    div.st-key-fast_btn button,
-    div.st-key-fast_btn button[kind="secondary"],
-    div.st-key-fast_btn button[kind="primary"] {
+    /* 음성 빠르게 - 빨간색 */
+    div.st-key-fast_btn button {
         background: #FF0000 !important;
         background-color: #FF0000 !important;
         color: #FFFFFF !important;
@@ -97,7 +93,7 @@ st.markdown(
         border-radius: 24px;
         padding: 35px;
         margin-top: 20px;
-        margin-bottom: 25px;
+        margin-bottom: 15px;
         text-align: center;
     }
 
@@ -113,36 +109,22 @@ st.markdown(
         font-size: 25px;
         line-height: 1.8;
         font-weight: 700;
-        margin-bottom: 30px;
     }
 
-    /* 기존 기능 페이지 이동 버튼 디자인 유지 */
-    .single-main-btn {
-        display: block;
-        width: 100%;
-        box-sizing: border-box;
-        padding: 25px 18px;
-        border-radius: 18px;
-        border: 4px solid #111111;
-        text-align: center;
-        font-size: 24px;
-        font-weight: 900;
+    /* 기능 페이지 이동 버튼 */
+    div[data-testid="stPageLink"] a {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        min-height: 85px !important;
+        padding: 18px !important;
+        border: 4px solid #111111 !important;
+        border-radius: 18px !important;
+        font-size: 23px !important;
+        font-weight: 900 !important;
+        text-align: center !important;
         text-decoration: none !important;
         color: #FFFFFF !important;
-        line-height: 1.5;
-    }
-
-    .single-main-btn:hover {
-        filter: brightness(0.9);
-        color: #FFFFFF !important;
-    }
-
-    .bg-step-1 {
-        background-color: #0055CC;
-    }
-
-    .bg-step-2 {
-        background-color: #008044;
     }
 
     /* 하단 안내 버튼 */
@@ -180,8 +162,8 @@ st.markdown(
             font-size: 21px;
         }
 
-        .single-main-btn {
-            font-size: 20px;
+        div[data-testid="stPageLink"] a {
+            font-size: 19px !important;
         }
     }
     </style>
@@ -236,26 +218,16 @@ with col_right:
 st.markdown("---")
 
 
-# 7. 기능 1, 2만 유지
+# 7. 기능 1, 2 정보
 step_data = {
     1: {
         "title": "1️⃣ 기능 1: 목적지 기반 버스 안내",
-        "description": (
-            "목적지를 입력하면 가장 적합한 버스를 안내해 줍니다."
-        ),
+        "description": "목적지를 입력하면 가장 적합한 버스를 안내해 줍니다.",
         "script": (
             "기능 1번 안내입니다. "
             "목적지를 입력하면 가장 적합한 버스를 안내해 줍니다. "
-            "아래의 큰 버튼을 누르면 기능 1번 페이지로 이동합니다."
-        ),
-        "link_text": (
-            "👉 [기능 1] 목적지 입력 및 버스 안내 페이지로 이동하기"
-        ),
-        "link_url": (
-            "https://blindbus.streamlit.app/"
-            "%EC%9A%B0%EC%84%A0%EC%88%9C%EC%9C%84"
-        ),
-        "bg_class": "bg-step-1"
+            "기능 1 페이지로 이동하려면 기능 1 버튼을 눌러주세요."
+        )
     },
     2: {
         "title": "2️⃣ 기능 2: 카메라를 이용한 버스 번호 인식",
@@ -267,24 +239,15 @@ step_data = {
             "기능 2번 안내입니다. "
             "카메라로 버스를 비추면 버스 번호를 인식하여 "
             "몇 번 버스인지 알려줍니다. "
-            "아래의 큰 버튼을 누르면 기능 2번 페이지로 이동합니다."
-        ),
-        "link_text": (
-            "👉 [기능 2] 카메라 버스 번호 인식 페이지로 이동하기"
-        ),
-        "link_url": (
-            "https://blindbus.streamlit.app/"
-            "%EC%B9%B4%EB%A9%94%EB%9D%BC_%EC%9D%B8%EC%8B%9D_%EC%8B%9C%EC%8A%A4%ED%85%9C"
-        ),
-        "bg_class": "bg-step-2"
+            "기능 2 페이지로 이동하려면 기능 2 버튼을 눌러주세요."
+        )
     }
 }
 
 
-# 8. 현재 기능 표시 및 음성 안내
+# 8. 현재 기능 안내
 step = st.session_state.current_step
 
-# 잘못된 단계 번호 방지
 if step not in step_data:
     st.session_state.current_step = 1
     step = 1
@@ -296,33 +259,34 @@ speak_text(
     st.session_state.speech_rate
 )
 
-# 기존 기능 페이지 이동 링크 유지
+# HTML 코드가 글자로 노출되지 않도록 카드 HTML을 한 줄로 작성
 st.markdown(
-    f"""
-    <div class="feature-card">
-        <div class="feature-title">
-            {current_info["title"]}
-        </div>
-
-        <div class="feature-description">
-            {current_info["description"]}
-        </div>
-
-        <a
-            href="{current_info["link_url"]}"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="single-main-btn {current_info["bg_class"]}"
-        >
-            {current_info["link_text"]}
-        </a>
-    </div>
-    """,
+    f'<div class="feature-card">'
+    f'<div class="feature-title">{current_info["title"]}</div>'
+    f'<div class="feature-description">{current_info["description"]}</div>'
+    f'</div>',
     unsafe_allow_html=True
 )
 
 
-# 9. 이전 안내 / 다시 듣기 / 다음 안내
+# 9. 기능 페이지 이동 버튼
+if step == 1:
+    st.page_link(
+        "pages/우선순위.py",
+        label="👉 [기능 1] 목적지 입력 및 버스 안내 페이지로 이동하기",
+        icon="🚌",
+        use_container_width=True
+    )
+else:
+    st.page_link(
+        "pages/카메라 인식 시스템.py",
+        label="👉 [기능 2] 카메라 버스 번호 인식 페이지로 이동하기",
+        icon="📷",
+        use_container_width=True
+    )
+
+
+# 10. 이전 안내 / 다시 듣기 / 다음 안내
 col_prev, col_replay, col_next = st.columns(3)
 
 with col_prev:
@@ -354,12 +318,12 @@ with col_next:
         use_container_width=True
     ):
         st.session_state.current_step = (
-            1 if st.session_state.current_step == 2 else 2
+            2 if st.session_state.current_step == 1 else 1
         )
         st.rerun()
 
 
-# 10. 자동 단계 전환: 기능 1 ↔ 기능 2
+# 11. 자동 단계 전환
 if st.session_state.auto_play:
     WAIT_TIME = 12
     time.sleep(WAIT_TIME)
