@@ -1,276 +1,254 @@
-import streamlit as st
-import streamlit.components.v1 as components
-import time
-import json
 
-# 1. 페이지 기본 설정
+# main/서비스 사용 설명.py
+
+import streamlit as st
+
+# -----------------------------------------
+# 페이지 설정
+# -----------------------------------------
 st.set_page_config(
-    page_title="시각장애인 버스 탑승 보조 시스템",
-    page_icon="🚌",
+    page_title="서비스 사용 설명",
+    page_icon="📖",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded",
 )
 
-# 2. 세션 상태 초기화
-if 'speech_rate' not in st.session_state:
-    st.session_state.speech_rate = 1.0
-
-if 'current_step' not in st.session_state:
-    st.session_state.current_step = 1
-
-if 'auto_play' not in st.session_state:
-    st.session_state.auto_play = True
-
-# 3. 브라우저 음성 안내 함수
-def speak_text(text, rate):
-    safe_text = json.dumps(text, ensure_ascii=False)
-
-    html_content = f"""
-    <script>
-        if ('speechSynthesis' in window) {{
-            window.speechSynthesis.cancel();
-
-            var msg = new SpeechSynthesisUtterance({safe_text});
-            msg.lang = 'ko-KR';
-            msg.rate = {rate};
-
-            window.speechSynthesis.speak(msg);
-        }}
-    </script>
+# -----------------------------------------
+# 디자인
+# -----------------------------------------
+st.markdown(
     """
-
-    components.html(html_content, height=0, width=0)
-
-# 4. 화면 스타일
-st.markdown("""
-<style>
-    .stApp {
-        background-color: #FFFFFF !important;
-        color: #000000 !important;
+    <style>
+    .main-title {
+        font-size: 34px;
+        font-weight: 800;
+        margin-bottom: 8px;
     }
 
-    [data-testid="column"]:nth-child(1) div.stButton > button {
-        background-color: #0055FF !important;
-        color: #FFFFFF !important;
-        font-size: 38px !important;
-        font-weight: 900 !important;
-        height: 180px !important;
-        width: 100% !important;
-        border-radius: 25px !important;
-        border: 6px solid #002288 !important;
-        box-shadow: 0px 10px 20px rgba(0, 85, 255, 0.4) !important;
+    .sub-title {
+        font-size: 17px;
+        line-height: 1.8;
+        margin-bottom: 24px;
     }
 
-    [data-testid="column"]:nth-child(2) div.stButton > button {
-        background-color: #FF0000 !important;
-        color: #FFFFFF !important;
-        font-size: 38px !important;
-        font-weight: 900 !important;
-        height: 180px !important;
-        width: 100% !important;
-        border-radius: 25px !important;
-        border: 6px solid #880000 !important;
-        box-shadow: 0px 10px 20px rgba(255, 0, 0, 0.4) !important;
+    .section-title {
+        font-size: 23px;
+        font-weight: 700;
+        margin-top: 18px;
+        margin-bottom: 12px;
     }
 
-    .single-main-btn {
-        display: block;
-        width: 100%;
-        box-sizing: border-box;
-        padding: 45px 20px;
-        margin: 20px 0;
-        font-size: 36px;
-        font-weight: 900;
-        text-align: center;
-        text-decoration: none;
-        border-radius: 30px;
-        border: 5px solid #000000;
-        box-shadow: 0px 12px 24px rgba(0, 0, 0, 0.25);
-        transition: transform 0.2s ease-in-out;
+    .info-card {
+        padding: 18px;
+        border: 1px solid rgba(128, 128, 128, 0.4);
+        border-radius: 14px;
+        margin-bottom: 12px;
     }
 
-    .bg-step-1 {
-        background-color: #FFD700 !important;
-        color: #000000 !important;
+    .info-card h3 {
+        margin-top: 0;
     }
 
-    .bg-step-2 {
-        background-color: #00CC55 !important;
-        color: #FFFFFF !important;
+    .info-card p {
+        line-height: 1.8;
     }
 
-    .bg-step-3 {
-        background-color: #AA00FF !important;
-        color: #FFFFFF !important;
+    .notice {
+        padding: 16px;
+        border-left: 5px solid #2878d0;
+        border-radius: 8px;
+        background-color: rgba(100, 140, 200, 0.10);
+        line-height: 1.8;
     }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
-    .single-main-btn:hover {
-        transform: scale(1.02);
-    }
-
-    .feature-card {
-        background-color: #F0F4F8;
-        border: 4px solid #111111;
-        border-radius: 25px;
-        padding: 30px;
-        margin-top: 10px;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# ----------------------------------------------------
-# 앱 타이틀 및 정보
-# ----------------------------------------------------
-st.title("🚌 시각장애인 버스 탑승 보조 안내 앱")
+# -----------------------------------------
+# 제목
+# -----------------------------------------
+st.title("📖 서비스 사용 설명")
 
 st.markdown(
-    f"### 🔊 현재 속도: **{st.session_state.speech_rate}x** "
-    f"| 안내 단계: **기능 {st.session_state.current_step} / 3**"
+    """
+    **시각장애인을 위한 버스 번호 인식 서비스**
+
+    버스 번호를 직접 확인하기 어려운 사람도 카메라로 버스를 촬영해
+    노선 번호를 확인할 수 있도록 돕는 서비스입니다.
+    """
 )
 
-# ----------------------------------------------------
-# 상단 음성 속도 조절 버튼
-# ----------------------------------------------------
-col_left, col_right = st.columns(2)
+st.divider()
 
-with col_left:
-    if st.button("🐢 음성 느리게", key="slow_btn"):
-        st.session_state.speech_rate = max(
-            0.5,
-            round(st.session_state.speech_rate - 0.25, 2)
-        )
-        st.rerun()
+# -----------------------------------------
+# 서비스 소개
+# -----------------------------------------
+st.header("💡 1. 서비스 소개")
 
-with col_right:
-    if st.button("⚡ 음성 빠르게", key="fast_btn"):
-        st.session_state.speech_rate = min(
-            2.0,
-            round(st.session_state.speech_rate + 0.25, 2)
-        )
-        st.rerun()
+st.markdown(
+    """
+    대중교통을 이용할 때 버스 번호를 확인하는 것은 중요한 과정입니다.
+    하지만 시각장애인은 버스가 도착해도 노선 번호를 확인하기 어려워
+    원하는 버스를 놓칠 수 있습니다.
 
-st.markdown("---")
-
-# ----------------------------------------------------
-# 단계별 안내 정보
-# ----------------------------------------------------
-step_data = {
-    1: {
-        "title": "1️⃣ 기능 1: 목적지 기반 버스 안내",
-        "desc": "목적지를 입력하면 가장 적합한 버스를 안내해 줍니다.",
-        "script": (
-            "기능 1번 안내입니다. "
-            "목적지를 입력하면 가장 적합한 버스를 안내해 줍니다. "
-            "아래의 큰 버튼을 누르면 기능 1번 페이지로 이동합니다."
-        ),
-        "link_text": "👉 [기능 1] 목적지 입력 및 버스 안내 페이지로 이동하기",
-        "link_url": "https://blindbus.streamlit.app/%EC%9A%B0%EC%84%A0%EC%88%9C%EC%9C%84",
-        "bg_class": "bg-step-1"
-    },
-
-    2: {
-        "title": "2️⃣ 기능 2: 카메라를 이용한 버스 번호 인식",
-        "desc": "카메라로 버스를 비추면 버스 번호를 인식하여 몇 번 버스인지 알려줍니다.",
-        "script": (
-            "기능 2번 안내입니다. "
-            "카메라로 버스를 비추면 버스 번호를 인식하여 "
-            "몇 번 버스인지 알려줍니다. "
-            "아래의 큰 버튼을 누르면 기능 2번 페이지로 이동합니다."
-        ),
-        "link_text": "👉 [기능 2] 카메라 버스 번호 인식 페이지로 이동하기",
-        "link_url": "https://blindbus.streamlit.app/%EC%B9%B4%EB%A9%94%EB%9D%BC_%EC%9D%B8%EC%8B%9D_%EC%8B%9C%EC%8A%A4%ED%85%9C",
-        "bg_class": "bg-step-2"
-    },
-
-    3: {
-        "title": "3️⃣ 기능 3: 정류장 주변 위험 안내",
-        "desc": "정류장 주변의 보도블록, 벤치, 위험 장애물을 감지하여 안전하게 대기하도록 돕습니다.",
-        "script": (
-            "마지막 기능 3번 안내입니다. "
-            "정류장 주변 위험 요소를 안내합니다. "
-            "아래의 큰 버튼을 누르면 기능 3번 페이지로 이동합니다."
-        ),
-        "link_text": "👉 [기능 3] 주변 위험 안내 페이지로 이동하기",
-        "link_url": "3번링크를 넣으시오",
-        "bg_class": "bg-step-3"
-    }
-}
-
-step = st.session_state.current_step
-current_info = step_data[step]
-
-# ----------------------------------------------------
-# 음성 안내 실행
-# ----------------------------------------------------
-# 화면이 새로고침될 때마다 음성이 자동으로 재생됩니다.
-speak_text(
-    current_info["script"],
-    st.session_state.speech_rate
+    이 서비스는 카메라로 촬영한 사진을 AI가 분석하여 버스 번호를
+    확인하고, 인식 결과를 음성으로 안내하는 것을 목표로 합니다.
+    """
 )
 
-# ----------------------------------------------------
-# 중앙 기능 설명 및 이동 버튼
-# ----------------------------------------------------
-st.markdown("## 📋 현재 음성 설명 중인 기능")
+col1, col2 = st.columns(2)
 
-card_html = (
-    '<div class="feature-card">'
-    f'<h2 style="margin-top:0; font-size:32px;">'
-    f'{current_info["title"]}</h2>'
-    f'<p style="font-size:22px; color:#222222; font-weight:bold;">'
-    f'{current_info["desc"]}</p>'
-    f'<a href="{current_info["link_url"]}" '
-    f'target="_blank" rel="noopener noreferrer" '
-    f'class="single-main-btn {current_info["bg_class"]}">'
-    f'{current_info["link_text"]}'
-    '</a>'
-    '</div>'
+with col1:
+    st.markdown(
+        """
+        <div class="info-card">
+            <h3>📷 카메라 인식</h3>
+            <p>
+            카메라로 버스를 촬영하거나 저장된 버스 사진을 업로드해
+            번호를 인식할 수 있습니다.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+with col2:
+    st.markdown(
+        """
+        <div class="info-card">
+            <h3>🔊 음성 안내</h3>
+            <p>
+            인식된 번호를 한국어 음성으로 안내해
+            화면을 보기 어려운 사용자에게 도움을 줍니다.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+st.divider()
+
+# -----------------------------------------
+# 사용 방법
+# -----------------------------------------
+st.header("📝 2. 사용 방법")
+
+steps = [
+    (
+        "1단계: 카메라 열기",
+        "메뉴에서 '카메라 인식 시스템' 페이지로 이동합니다.",
+    ),
+    (
+        "2단계: 버스 촬영하기",
+        "버스의 앞면이나 옆면에 표시된 노선 번호가 잘 보이도록 촬영합니다.",
+    ),
+    (
+        "3단계: 번호 인식하기",
+        "'버스 번호 인식하기' 버튼을 눌러 사진 분석을 시작합니다.",
+    ),
+    (
+        "4단계: 안내 확인하기",
+        "인식 결과를 확인하고 음성 안내 기능으로 번호를 다시 들을 수 있습니다.",
+    ),
+    (
+        "5단계: 다시 촬영하기",
+        "번호를 확인하지 못했다면 카메라 방향이나 거리를 조절해 다시 촬영합니다.",
+    ),
+]
+
+for title, description in steps:
+    with st.container(border=True):
+        st.subheader(title)
+        st.write(description)
+
+st.divider()
+
+# -----------------------------------------
+# 주요 기능
+# -----------------------------------------
+st.header("⚙️ 3. 주요 기능")
+
+with st.expander("📷 카메라를 이용한 번호 인식"):
+    st.write(
+        "기기의 카메라로 버스를 촬영하면 AI가 사진 속 노선 번호를 "
+        "분석합니다. 조명이 어둡거나 번호가 흐리면 인식에 실패할 수 있습니다."
+    )
+
+with st.expander("🖼️ 사진 업로드"):
+    st.write(
+        "이미 촬영해 둔 버스 사진이 있다면 이미지 업로드 기능을 이용할 수 있습니다."
+    )
+
+with st.expander("🔊 한국어 음성 안내"):
+    st.write(
+        "인식 결과를 브라우저의 음성 합성 기능으로 읽어 줍니다. "
+        "기기의 음량과 브라우저의 음성 지원 여부에 따라 작동이 달라질 수 있습니다."
+    )
+
+with st.expander("🔄 인식 실패 시 다시 시도"):
+    st.write(
+        "AI가 번호를 확실하게 확인하지 못하면 사진을 다시 촬영하도록 안내합니다. "
+        "번호가 불분명한 경우에는 AI가 추측한 번호를 믿지 말고 다시 확인해야 합니다."
+    )
+
+st.divider()
+
+# -----------------------------------------
+# 이용 시 주의사항
+# -----------------------------------------
+st.header("⚠️ 4. 이용 시 주의사항")
+
+st.markdown(
+    """
+    <div class="notice">
+    <strong>안전하게 이용해 주세요.</strong><br><br>
+    • 촬영 중에는 도로로 들어가거나 위험한 곳으로 이동하지 마세요.<br>
+    • AI가 버스 번호를 잘못 인식할 수 있으므로 결과가 항상 정확한 것은 아닙니다.<br>
+    • 음성 안내가 나오지 않으면 기기의 음량과 브라우저 설정을 확인해 주세요.<br>
+    • 실제 탑승 전에는 가능한 경우 정류장 안내나 주변의 도움을 통해
+    버스 번호를 한 번 더 확인해 주세요.
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
 
-st.markdown(card_html, unsafe_allow_html=True)
+st.divider()
 
-st.markdown("---")
+# -----------------------------------------
+# 자주 묻는 질문
+# -----------------------------------------
+st.header("❓ 5. 자주 묻는 질문")
 
-# ----------------------------------------------------
-# 하단 컨트롤러
-# ----------------------------------------------------
-col_ctrl1, col_ctrl2, col_ctrl3 = st.columns(3)
+with st.expander("버스 번호가 인식되지 않아요."):
+    st.write(
+        "번호가 사진에서 작거나 흐릿할 수 있습니다. 번호가 잘 보이도록 "
+        "카메라 방향을 조절한 뒤 다시 촬영해 주세요."
+    )
 
-with col_ctrl1:
-    if st.button(
-        "⬅️ 이전 안내",
-        key="prev_btn",
-        use_container_width=True
-    ):
-        st.session_state.current_step = 3 if step == 1 else step - 1
-        st.rerun()
+with st.expander("음성이 나오지 않아요."):
+    st.write(
+        "기기의 음량을 확인하고 브라우저가 음성 합성을 지원하는지 확인해 주세요. "
+        "일부 브라우저에서는 사용자의 버튼 조작 후에만 음성이 재생될 수 있습니다."
+    )
 
-with col_ctrl2:
-    if st.button(
-        "🔊 음성 다시 듣기",
-        key="replay_btn",
-        use_container_width=True
-    ):
-        speak_text(
-            current_info["script"],
-            st.session_state.speech_rate
-        )
+with st.expander("사진 속 숫자가 모두 버스 번호로 인식되나요?"):
+    st.write(
+        "아닙니다. 차량 번호나 광고에 포함된 숫자 등과 혼동할 수 있습니다. "
+        "노선 번호가 분명하게 보이는 사진을 사용하는 것이 좋습니다."
+    )
 
-with col_ctrl3:
-    if st.button(
-        "다음 안내 ➡️",
-        key="next_btn",
-        use_container_width=True
-    ):
-        st.session_state.current_step = 1 if step == 3 else step + 1
-        st.rerun()
+with st.expander("이 서비스를 사용하면 무조건 안전하게 버스를 탈 수 있나요?"):
+    st.write(
+        "아닙니다. 이 서비스는 버스 번호 확인을 돕는 보조 수단입니다. "
+        "인식 결과가 틀릴 수 있으므로 주변 환경을 살피고 안전을 우선해 주세요."
+    )
 
-# ----------------------------------------------------
-# 자동 다음 단계 전환
-# ----------------------------------------------------
-if st.session_state.auto_play:
-    WAIT_TIME = 12
-    time.sleep(WAIT_TIME)
+# -----------------------------------------
+# 하단 안내
+# -----------------------------------------
+st.divider()
 
-    st.session_state.current_step = 1 if step == 3 else step + 1
-    st.rerun()
+st.caption(
+    "버스 번호 인식 서비스 | 누구나 더 편리하게 대중교통을 이용할 수 있도록 돕습니다."
+)
