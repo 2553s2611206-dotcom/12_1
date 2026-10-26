@@ -1,276 +1,184 @@
+# pages/카메라 인식 시스템.py
+# 프로토타입용 가짜 버스 인식 결과
+# 실제 AI 분석 및 실제 버스 번호 확인 기능은 포함하지 않습니다.
+
 import streamlit as st
-import streamlit.components.v1 as components
-import time
-import json
+from PIL import Image
+from io import BytesIO
 
-# 1. 페이지 기본 설정
 st.set_page_config(
-    page_title="시각장애인 버스 탑승 보조 시스템",
+    page_title="버스 번호 카메라 인식",
     page_icon="🚌",
-    layout="wide",
-    initial_sidebar_state="collapsed"
+    layout="centered",
 )
 
-# 2. 세션 상태 초기화
-if 'speech_rate' not in st.session_state:
-    st.session_state.speech_rate = 1.0
-
-if 'current_step' not in st.session_state:
-    st.session_state.current_step = 1
-
-if 'auto_play' not in st.session_state:
-    st.session_state.auto_play = True
-
-# 3. 브라우저 음성 안내 함수
-def speak_text(text, rate):
-    safe_text = json.dumps(text, ensure_ascii=False)
-
-    html_content = f"""
-    <script>
-        if ('speechSynthesis' in window) {{
-            window.speechSynthesis.cancel();
-
-            var msg = new SpeechSynthesisUtterance({safe_text});
-            msg.lang = 'ko-KR';
-            msg.rate = {rate};
-
-            window.speechSynthesis.speak(msg);
-        }}
-    </script>
-    """
-
-    components.html(html_content, height=0, width=0)
-
-# 4. 화면 스타일
-st.markdown("""
-<style>
-    .stApp {
-        background-color: #FFFFFF !important;
-        color: #000000 !important;
-    }
-
-    [data-testid="column"]:nth-child(1) div.stButton > button {
-        background-color: #0055FF !important;
-        color: #FFFFFF !important;
-        font-size: 38px !important;
-        font-weight: 900 !important;
-        height: 180px !important;
-        width: 100% !important;
-        border-radius: 25px !important;
-        border: 6px solid #002288 !important;
-        box-shadow: 0px 10px 20px rgba(0, 85, 255, 0.4) !important;
-    }
-
-    [data-testid="column"]:nth-child(2) div.stButton > button {
-        background-color: #FF0000 !important;
-        color: #FFFFFF !important;
-        font-size: 38px !important;
-        font-weight: 900 !important;
-        height: 180px !important;
-        width: 100% !important;
-        border-radius: 25px !important;
-        border: 6px solid #880000 !important;
-        box-shadow: 0px 10px 20px rgba(255, 0, 0, 0.4) !important;
-    }
-
-    .single-main-btn {
-        display: block;
-        width: 100%;
-        box-sizing: border-box;
-        padding: 45px 20px;
-        margin: 20px 0;
-        font-size: 36px;
-        font-weight: 900;
-        text-align: center;
-        text-decoration: none;
-        border-radius: 30px;
-        border: 5px solid #000000;
-        box-shadow: 0px 12px 24px rgba(0, 0, 0, 0.25);
-        transition: transform 0.2s ease-in-out;
-    }
-
-    .bg-step-1 {
-        background-color: #FFD700 !important;
-        color: #000000 !important;
-    }
-
-    .bg-step-2 {
-        background-color: #00CC55 !important;
-        color: #FFFFFF !important;
-    }
-
-    .bg-step-3 {
-        background-color: #AA00FF !important;
-        color: #FFFFFF !important;
-    }
-
-    .single-main-btn:hover {
-        transform: scale(1.02);
-    }
-
-    .feature-card {
-        background-color: #F0F4F8;
-        border: 4px solid #111111;
-        border-radius: 25px;
-        padding: 30px;
-        margin-top: 10px;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# ----------------------------------------------------
-# 앱 타이틀 및 정보
-# ----------------------------------------------------
-st.title("🚌 시각장애인 버스 탑승 보조 안내 앱")
-
-st.markdown(
-    f"### 🔊 현재 속도: **{st.session_state.speech_rate}x** "
-    f"| 안내 단계: **기능 {st.session_state.current_step} / 3**"
+# -----------------------------
+# 제목 및 설명
+# -----------------------------
+st.title("🚌 버스 번호 카메라 인식")
+st.write(
+    "카메라로 버스를 촬영하는 상황을 체험하고 "
+    "버스 번호 음성 안내 기능을 시연할 수 있습니다."
 )
 
-# ----------------------------------------------------
-# 상단 음성 속도 조절 버튼
-# ----------------------------------------------------
-col_left, col_right = st.columns(2)
+st.warning(
+    "프로토타입 시연 모드입니다. 아래에 표시되는 버스 번호는 "
+    "가짜 테스트 데이터이며 사진을 실제로 분석한 결과가 아닙니다."
+)
 
-with col_left:
-    if st.button("🐢 음성 느리게", key="slow_btn"):
-        st.session_state.speech_rate = max(
-            0.5,
-            round(st.session_state.speech_rate - 0.25, 2)
-        )
-        st.rerun()
-
-with col_right:
-    if st.button("⚡ 음성 빠르게", key="fast_btn"):
-        st.session_state.speech_rate = min(
-            2.0,
-            round(st.session_state.speech_rate + 0.25, 2)
-        )
-        st.rerun()
-
-st.markdown("---")
-
-# ----------------------------------------------------
-# 단계별 안내 정보
-# ----------------------------------------------------
-step_data = {
-    1: {
-        "title": "1️⃣ 기능 1: 목적지 기반 버스 안내",
-        "desc": "목적지를 입력하면 가장 적합한 버스를 안내해 줍니다.",
-        "script": (
-            "기능 1번 안내입니다. "
-            "목적지를 입력하면 가장 적합한 버스를 안내해 줍니다. "
-            "아래의 큰 버튼을 누르면 기능 1번 페이지로 이동합니다."
-        ),
-        "link_text": "👉 [기능 1] 목적지 입력 및 버스 안내 페이지로 이동하기",
-        "link_url": "https://blindbus.streamlit.app/%EC%9A%B0%EC%84%A0%EC%88%9C%EC%9C%84",
-        "bg_class": "bg-step-1"
+# -----------------------------
+# 가짜 테스트 데이터
+# -----------------------------
+TEST_RESULTS = {
+    "인식 성공 — 273번": {
+        "recognized": True,
+        "bus_number": "273",
+        "message": "테스트 안내입니다. 273번 버스입니다.",
     },
-
-    2: {
-        "title": "2️⃣ 기능 2: 카메라를 이용한 버스 번호 인식",
-        "desc": "카메라로 버스를 비추면 버스 번호를 인식하여 몇 번 버스인지 알려줍니다.",
-        "script": (
-            "기능 2번 안내입니다. "
-            "카메라로 버스를 비추면 버스 번호를 인식하여 "
-            "몇 번 버스인지 알려줍니다. "
-            "아래의 큰 버튼을 누르면 기능 2번 페이지로 이동합니다."
-        ),
-        "link_text": "👉 [기능 2] 카메라 버스 번호 인식 페이지로 이동하기",
-        "link_url": "https://blindbus.streamlit.app/%EC%B9%B4%EB%A9%94%EB%9D%BC_%EC%9D%B8%EC%8B%9D_%EC%8B%9C%EC%8A%A4%ED%85%9C",
-        "bg_class": "bg-step-2"
+    "인식 성공 — 7016번": {
+        "recognized": True,
+        "bus_number": "7016",
+        "message": "테스트 안내입니다. 7016번 버스입니다.",
     },
-
-    3: {
-        "title": "3️⃣ 기능 3: 정류장 주변 위험 안내",
-        "desc": "정류장 주변의 보도블록, 벤치, 위험 장애물을 감지하여 안전하게 대기하도록 돕습니다.",
-        "script": (
-            "마지막 기능 3번 안내입니다. "
-            "정류장 주변 위험 요소를 안내합니다. "
-            "아래의 큰 버튼을 누르면 기능 3번 페이지로 이동합니다."
+    "인식 성공 — 143번": {
+        "recognized": True,
+        "bus_number": "143",
+        "message": "테스트 안내입니다. 143번 버스입니다.",
+    },
+    "인식 실패": {
+        "recognized": False,
+        "bus_number": "",
+        "message": (
+            "테스트 안내입니다. 버스 번호를 확인할 수 없습니다. "
+            "카메라를 버스 번호 쪽으로 다시 맞춰 주세요."
         ),
-        "link_text": "👉 [기능 3] 주변 위험 안내 페이지로 이동하기",
-        "link_url": "3번링크를 넣으시오",
-        "bg_class": "bg-step-3"
-    }
+    },
 }
 
-step = st.session_state.current_step
-current_info = step_data[step]
+# -----------------------------
+# 사진 촬영 및 업로드
+# -----------------------------
+st.subheader("📷 1. 버스 사진 촬영")
 
-# ----------------------------------------------------
-# 음성 안내 실행
-# ----------------------------------------------------
-# 화면이 새로고침될 때마다 음성이 자동으로 재생됩니다.
-speak_text(
-    current_info["script"],
-    st.session_state.speech_rate
+camera_photo = st.camera_input(
+    "버스 번호가 보이도록 촬영해 주세요"
 )
 
-# ----------------------------------------------------
-# 중앙 기능 설명 및 이동 버튼
-# ----------------------------------------------------
-st.markdown("## 📋 현재 음성 설명 중인 기능")
-
-card_html = (
-    '<div class="feature-card">'
-    f'<h2 style="margin-top:0; font-size:32px;">'
-    f'{current_info["title"]}</h2>'
-    f'<p style="font-size:22px; color:#222222; font-weight:bold;">'
-    f'{current_info["desc"]}</p>'
-    f'<a href="{current_info["link_url"]}" '
-    f'target="_blank" rel="noopener noreferrer" '
-    f'class="single-main-btn {current_info["bg_class"]}">'
-    f'{current_info["link_text"]}'
-    '</a>'
-    '</div>'
+uploaded_photo = st.file_uploader(
+    "또는 버스 사진 업로드",
+    type=["jpg", "jpeg", "png", "webp"],
 )
 
-st.markdown(card_html, unsafe_allow_html=True)
+selected_photo = (
+    camera_photo if camera_photo is not None else uploaded_photo
+)
 
-st.markdown("---")
+if selected_photo is not None:
+    try:
+        photo = Image.open(
+            BytesIO(selected_photo.getvalue())
+        ).convert("RGB")
 
-# ----------------------------------------------------
-# 하단 컨트롤러
-# ----------------------------------------------------
-col_ctrl1, col_ctrl2, col_ctrl3 = st.columns(3)
-
-with col_ctrl1:
-    if st.button(
-        "⬅️ 이전 안내",
-        key="prev_btn",
-        use_container_width=True
-    ):
-        st.session_state.current_step = 3 if step == 1 else step - 1
-        st.rerun()
-
-with col_ctrl2:
-    if st.button(
-        "🔊 음성 다시 듣기",
-        key="replay_btn",
-        use_container_width=True
-    ):
-        speak_text(
-            current_info["script"],
-            st.session_state.speech_rate
+        st.image(
+            photo,
+            caption="선택한 사진 — 테스트용",
+            width="stretch",
         )
+    except Exception:
+        st.error("사진을 열 수 없습니다. 다른 사진을 선택해 주세요.")
 
-with col_ctrl3:
-    if st.button(
-        "다음 안내 ➡️",
-        key="next_btn",
-        use_container_width=True
-    ):
-        st.session_state.current_step = 1 if step == 3 else step + 1
-        st.rerun()
+st.divider()
 
-# ----------------------------------------------------
-# 자동 다음 단계 전환
-# ----------------------------------------------------
-if st.session_state.auto_play:
-    WAIT_TIME = 12
-    time.sleep(WAIT_TIME)
+# -----------------------------
+# 테스트 결과 선택
+# -----------------------------
+st.subheader("🧪 2. 시연할 테스트 결과 선택")
 
-    st.session_state.current_step = 1 if step == 3 else step + 1
+scenario = st.selectbox(
+    "버튼을 눌렀을 때 보여 줄 결과",
+    options=list(TEST_RESULTS.keys()),
+    index=0,
+)
+
+st.caption(
+    "시연할 결과를 선택할 수 있습니다. 사진이 없어도 테스트할 수 있습니다."
+)
+
+# -----------------------------
+# 결과 표시
+# -----------------------------
+if st.button(
+    "🔍 버스 번호 인식하기 (테스트)",
+    type="primary",
+    width="stretch",
+):
+    st.session_state["prototype_bus_result"] = TEST_RESULTS[scenario]
+
+result = st.session_state.get("prototype_bus_result")
+
+if result is not None:
+    st.divider()
+    st.subheader("📢 3. 테스트 인식 결과")
+
+    if result["recognized"]:
+        st.success("테스트 인식 성공")
+
+        st.markdown(
+            f"# 🚌 {result['bus_number']}번 버스"
+        )
+    else:
+        st.error("테스트 인식 실패")
+
+    st.info(result["message"])
+
+    st.caption(
+        "위 결과는 미리 지정한 가짜 데이터입니다. "
+        "실제 버스 번호를 인식하거나 확인한 결과가 아닙니다."
+    )
+
+    # -----------------------------
+    # 음성 안내 시연용 텍스트
+    # -----------------------------
+    st.subheader("🔊 음성 안내 시연")
+
+    st.write("아래 문장을 음성 안내 문구로 사용합니다.")
+
+    st.text_area(
+        "안내 문구",
+        value=result["message"],
+        height=90,
+        disabled=True,
+    )
+
+    # 브라우저에서 직접 읽어 주는 기능 대신,
+    # 시연용 안내 문구를 화면에 표시합니다.
+    st.caption(
+        "현재 버전은 안내 문구 표시까지만 구현되어 있습니다. "
+        "실제 음성 재생은 별도로 연결해야 합니다."
+    )
+
+# -----------------------------
+# 다시 테스트
+# -----------------------------
+st.divider()
+
+if st.button("🔄 테스트 결과 초기화", width="stretch"):
+    st.session_state.pop("prototype_bus_result", None)
     st.rerun()
+
+# -----------------------------
+# 하단 안내
+# -----------------------------
+with st.expander("ℹ️ 프로토타입 안내"):
+    st.markdown(
+        """
+        - **사진 촬영:** 카메라 화면을 표시합니다.
+        - **사진 업로드:** 저장된 사진을 선택할 수 있습니다.
+        - **테스트 결과:** 미리 설정된 가짜 버스 번호를 표시합니다.
+        - **인식 실패 시나리오:** 번호를 확인하지 못한 상황을 시연합니다.
+
+        이 버전은 화면과 사용자 흐름을 시연하기 위한 프로토타입입니다.
+        실제 버스 번호 인식 기능은 포함되어 있지 않습니다.
+        """
+    )
+```
