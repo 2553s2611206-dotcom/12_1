@@ -50,17 +50,9 @@ st.markdown("""
         color: #000000 !important;
     }
 
-    /* 음성 느리게 버튼 - 파란색 */
-    div[data-testid="stHorizontalBlock"]:has(
-        button[key="slow_btn"]
-    ) {
-        width: 100%;
-    }
-
-    /* 상단 속도 조절 버튼 공통 스타일 */
-    div[data-testid="stHorizontalBlock"]:has(
-        button[key="slow_btn"]
-    ) div[data-testid="column"] div.stButton > button {
+    /* 상단 음성 조절 버튼: 공통 스타일 */
+    div[data-testid="stHorizontalBlock"]:first-of-type
+    div[data-testid="column"] button {
         font-size: 38px !important;
         font-weight: 900 !important;
         height: 180px !important;
@@ -68,26 +60,27 @@ st.markdown("""
         border-radius: 25px !important;
     }
 
-    /* 파란색 느리게 버튼 */
-    div[data-testid="stHorizontalBlock"]:has(
-        button[key="slow_btn"]
-    ) div[data-testid="column"]:first-child div.stButton > button {
+    /* 첫 번째 버튼: 파란색 */
+    div[data-testid="stHorizontalBlock"]:first-of-type
+    div[data-testid="column"]:nth-child(1)
+    div[data-testid="stButton"] button {
         background-color: #0055FF !important;
         color: #FFFFFF !important;
         border: 6px solid #002288 !important;
-        box-shadow: 0px 10px 20px rgba(0, 85, 255, 0.4) !important;
+        box-shadow: 0 10px 20px rgba(0, 85, 255, 0.4) !important;
     }
 
-    /* 빨간색 빠르게 버튼 */
-    div[data-testid="stHorizontalBlock"]:has(
-        button[key="fast_btn"]
-    ) div[data-testid="column"]:nth-child(2) div.stButton > button {
+    /* 두 번째 버튼: 빨간색 */
+    div[data-testid="stHorizontalBlock"]:first-of-type
+    div[data-testid="column"]:nth-child(2)
+    div[data-testid="stButton"] button {
         background-color: #FF0000 !important;
         color: #FFFFFF !important;
         border: 6px solid #880000 !important;
-        box-shadow: 0px 10px 20px rgba(255, 0, 0, 0.4) !important;
+        box-shadow: 0 10px 20px rgba(255, 0, 0, 0.4) !important;
     }
 
+    /* 메인 이동 버튼 */
     .single-main-btn {
         display: block;
         width: 100%;
@@ -100,7 +93,7 @@ st.markdown("""
         text-decoration: none;
         border-radius: 30px;
         border: 5px solid #000000;
-        box-shadow: 0px 12px 24px rgba(0, 0, 0, 0.25);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
         transition: transform 0.2s ease-in-out;
     }
 
