@@ -1,4 +1,4 @@
-```python
+
 # main/서비스 사용 설명.py
 
 import streamlit as st
@@ -252,4 +252,4 @@ st.divider()
 st.caption(
     "버스 번호 인식 서비스 | 누구나 더 편리하게 대중교통을 이용할 수 있도록 돕습니다."
 )
-```
+
