@@ -116,31 +116,6 @@ st.markdown(
         border: 5px solid #990000 !important;
     }
 
-    /* 앱 소개 카드 */
-    .intro-card {
-        background-color: #FFF8DC;
-        border: 4px solid #8A6500;
-        border-radius: 24px;
-        padding: 25px;
-        margin-top: 20px;
-        margin-bottom: 20px;
-        text-align: center;
-    }
-
-    .intro-title {
-        color: #000000;
-        font-size: 32px;
-        font-weight: 900;
-        margin-bottom: 12px;
-    }
-
-    .intro-description {
-        color: #111111;
-        font-size: 22px;
-        font-weight: 700;
-        line-height: 1.8;
-    }
-
     /* 기능 설명 카드 */
     .feature-card {
         background-color: #F5F8FF;
@@ -233,14 +208,6 @@ st.markdown(
             font-size: 21px;
         }
 
-        .intro-title {
-            font-size: 26px;
-        }
-
-        .intro-description {
-            font-size: 19px;
-        }
-
         div[data-testid="stPageLink"] a {
             min-height: 100px !important;
             padding: 18px !important;
@@ -303,31 +270,7 @@ with col_right:
 st.markdown("---")
 
 
-# 8. 앱 소개 영역
-st.markdown(
-    """
-    <div class="intro-card">
-        <div class="intro-title">
-            📢 앱 소개
-        </div>
-        <div class="intro-description">
-            이 앱은 시각장애인의 편리하고 안전한 버스 탑승을
-            돕기 위한 시스템입니다.<br>
-            목적지 기반 버스 안내와 카메라를 이용한
-            버스 번호 인식 기능을 제공합니다.<br>
-            앱에 접속하면 전체적인 사용 방법을
-            음성으로 자동 안내합니다.
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-
-st.markdown("---")
-
-
-# 9. 기능 1, 2 안내 데이터
+# 8. 기능 1, 2 안내 데이터
 step_data = {
     1: {
         "title": "1️⃣ 기능 1: 목적지 기반 버스 안내",
@@ -356,7 +299,7 @@ step_data = {
 }
 
 
-# 10. 현재 기능 표시
+# 9. 현재 기능 표시
 step = st.session_state.current_step
 
 if step not in step_data:
@@ -378,7 +321,7 @@ if not st.session_state.intro_played:
     )
 
 else:
-    # 앱 소개가 끝난 이후에는 기존 기능 안내 실행
+    # 앱 소개 이후 기존 기능 안내 실행
     speak_text(
         current_info["script"],
         st.session_state.speech_rate
@@ -401,7 +344,7 @@ st.markdown(
 )
 
 
-# 11. 기능별 이동 버튼 색상
+# 10. 기능별 이동 버튼 색상
 if step == 1:
     # 기능 1: 노란색 배경 + 검은색 글씨
     st.markdown(
@@ -485,7 +428,7 @@ else:
     )
 
 
-# 12. 이전 안내 / 다시 듣기 / 다음 안내
+# 11. 이전 안내 / 다시 듣기 / 다음 안내
 col_prev, col_replay, col_next = st.columns(3)
 
 with col_prev:
@@ -522,11 +465,9 @@ with col_next:
         st.rerun()
 
 
-# 13. 자동 단계 전환: 기능 1 ↔ 기능 2
+# 12. 자동 단계 전환: 기능 1 ↔ 기능 2
 if st.session_state.auto_play:
 
-    # 앱 소개 음성이 재생되는 첫 번째 구간은
-    # 기존 12초 대신 60초 동안 기다림
     if st.session_state.intro_just_started:
         WAIT_TIME = 60
         st.session_state.intro_just_started = False
