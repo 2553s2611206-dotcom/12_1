@@ -26,6 +26,9 @@ if "auto_play" not in st.session_state:
 if "intro_played" not in st.session_state:
     st.session_state.intro_played = False
 
+if "intro_just_started" not in st.session_state:
+    st.session_state.intro_just_started = False
+
 
 # 3. 음성 안내 함수
 def speak_text(text, rate=1.0):
@@ -138,24 +141,6 @@ st.markdown(
         line-height: 1.8;
     }
 
-    /* 앱 소개 음성 버튼 */
-    div.st-key-intro_btn button {
-        width: 100% !important;
-        min-height: 100px !important;
-        background-color: #6A35B5 !important;
-        color: #FFFFFF !important;
-        border: 5px solid #3D167A !important;
-        border-radius: 22px !important;
-        font-size: 28px !important;
-        font-weight: 900 !important;
-    }
-
-    div.st-key-intro_btn button p {
-        color: #FFFFFF !important;
-        font-size: 28px !important;
-        font-weight: 900 !important;
-    }
-
     /* 기능 설명 카드 */
     .feature-card {
         background-color: #F5F8FF;
@@ -256,15 +241,6 @@ st.markdown(
             font-size: 19px;
         }
 
-        div.st-key-intro_btn button {
-            font-size: 23px !important;
-            min-height: 85px !important;
-        }
-
-        div.st-key-intro_btn button p {
-            font-size: 23px !important;
-        }
-
         div[data-testid="stPageLink"] a {
             min-height: 100px !important;
             padding: 18px !important;
@@ -329,7 +305,7 @@ st.markdown("---")
 
 # 8. 앱 소개 영역
 st.markdown(
-    f"""
+    """
     <div class="intro-card">
         <div class="intro-title">
             📢 앱 소개
@@ -339,25 +315,13 @@ st.markdown(
             돕기 위한 시스템입니다.<br>
             목적지 기반 버스 안내와 카메라를 이용한
             버스 번호 인식 기능을 제공합니다.<br>
-            아래 버튼을 누르면 앱의 전체적인 사용 방법을
-            음성으로 안내받을 수 있습니다.
+            앱에 접속하면 전체적인 사용 방법을
+            음성으로 자동 안내합니다.
         </div>
     </div>
     """,
     unsafe_allow_html=True
 )
-
-
-# 앱 소개 음성 재생 버튼
-if st.button(
-    "🔊 앱 전체 소개 음성 듣기",
-    key="intro_btn",
-    use_container_width=True
-):
-    speak_text(
-        app_intro,
-        st.session_state.speech_rate
-    )
 
 
 st.markdown("---")
@@ -401,11 +365,25 @@ if step not in step_data:
 
 current_info = step_data[step]
 
-# 현재 기능 음성 안내
-speak_text(
-    current_info["script"],
-    st.session_state.speech_rate
-)
+
+# 앱 첫 접속 시 앱 소개 + 기능 1 음성 자동 안내
+if not st.session_state.intro_played:
+
+    st.session_state.intro_played = True
+    st.session_state.intro_just_started = True
+
+    speak_text(
+        app_intro + " " + current_info["script"],
+        st.session_state.speech_rate
+    )
+
+else:
+    # 앱 소개가 끝난 이후에는 기존 기능 안내 실행
+    speak_text(
+        current_info["script"],
+        st.session_state.speech_rate
+    )
+
 
 # 기능 설명 카드
 st.markdown(
@@ -546,7 +524,15 @@ with col_next:
 
 # 13. 자동 단계 전환: 기능 1 ↔ 기능 2
 if st.session_state.auto_play:
-    WAIT_TIME = 12
+
+    # 앱 소개 음성이 재생되는 첫 번째 구간은
+    # 기존 12초 대신 60초 동안 기다림
+    if st.session_state.intro_just_started:
+        WAIT_TIME = 60
+        st.session_state.intro_just_started = False
+    else:
+        WAIT_TIME = 12
+
     time.sleep(WAIT_TIME)
 
     if st.session_state.current_step == step:
