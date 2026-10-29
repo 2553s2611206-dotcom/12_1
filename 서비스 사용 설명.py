@@ -22,12 +22,14 @@ if "current_step" not in st.session_state:
 if "auto_play" not in st.session_state:
     st.session_state.auto_play = True
 
-# 앱 소개 음성 재생 여부
 if "intro_played" not in st.session_state:
     st.session_state.intro_played = False
 
 if "intro_just_started" not in st.session_state:
     st.session_state.intro_just_started = False
+
+if "auto_next_at" not in st.session_state:
+    st.session_state.auto_next_at = None
 
 
 # 3. 음성 안내 함수
@@ -315,17 +317,23 @@ if not st.session_state.intro_played:
     st.session_state.intro_played = True
     st.session_state.intro_just_started = True
 
+    # 앱 소개 시간 확보: 60초
+    st.session_state.auto_next_at = time.time() + 60
+
     speak_text(
         app_intro + " " + current_info["script"],
         st.session_state.speech_rate
     )
 
 else:
-    # 앱 소개 이후 기존 기능 안내 실행
+    # 기존 기능 안내
     speak_text(
         current_info["script"],
         st.session_state.speech_rate
     )
+
+    if st.session_state.auto_next_at is None:
+        st.session_state.auto_next_at = time.time() + 12
 
 
 # 기능 설명 카드
@@ -440,6 +448,7 @@ with col_prev:
         st.session_state.current_step = (
             2 if st.session_state.current_step == 1 else 1
         )
+        st.session_state.auto_next_at = time.time() + 12
         st.rerun()
 
 with col_replay:
@@ -462,22 +471,35 @@ with col_next:
         st.session_state.current_step = (
             2 if st.session_state.current_step == 1 else 1
         )
+        st.session_state.auto_next_at = time.time() + 12
         st.rerun()
 
 
-# 12. 자동 단계 전환: 기능 1 ↔ 기능 2
-if st.session_state.auto_play:
+# 12. 자동 단계 전환
+# time.sleep()을 사용하지 않아 화면이 멈추거나
+# 중복된 화면이 희미하게 남는 현상을 방지
 
-    if st.session_state.intro_just_started:
-        WAIT_TIME = 60
-        st.session_state.intro_just_started = False
-    else:
-        WAIT_TIME = 12
+@st.fragment(run_every=1)
+def auto_step_transition():
 
-    time.sleep(WAIT_TIME)
+    if not st.session_state.auto_play:
+        return
 
-    if st.session_state.current_step == step:
+    if st.session_state.auto_next_at is None:
+        return
+
+    if time.time() >= st.session_state.auto_next_at:
+
         st.session_state.current_step = (
-            2 if step == 1 else 1
+            2 if st.session_state.current_step == 1 else 1
         )
+
+        st.session_state.intro_just_started = False
+
+        # 다음 자동 전환까지 12초 설정
+        st.session_state.auto_next_at = time.time() + 12
+
         st.rerun()
+
+
+auto_step_transition()
