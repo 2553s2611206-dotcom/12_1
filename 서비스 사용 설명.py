@@ -30,7 +30,7 @@ if "intro_just_started" not in st.session_state:
 if "auto_next_at" not in st.session_state:
     st.session_state.auto_next_at = None
 
-# 마지막으로 음성 안내를 실행한 기능 단계
+# 현재 단계의 음성 안내가 이미 실행되었는지 확인
 if "last_spoken_step" not in st.session_state:
     st.session_state.last_spoken_step = None
 
@@ -41,34 +41,64 @@ def speak_text(text, rate=1.0):
 
     html_code = f"""
     <script>
-    if ("speechSynthesis" in window) {{
-        window.speechSynthesis.cancel();
+    (() => {{
+        if (!("speechSynthesis" in window)) return;
 
+        const synth = window.speechSynthesis;
         const msg = new SpeechSynthesisUtterance({safe_text});
         msg.lang = "ko-KR";
         msg.rate = {rate};
 
-        window.speechSynthesis.speak(msg);
-    }}
+        // 한국어 음성이 준비된 뒤 재생하고, 첫 로딩 지연에도 대응
+        let started = false;
+        const startSpeech = () => {{
+            if (started) return;
+            started = true;
+
+            const voices = synth.getVoices();
+            const koreanVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith("ko"));
+            if (koreanVoice) msg.voice = koreanVoice;
+
+            synth.cancel();
+            synth.resume();
+            synth.speak(msg);
+        }};
+
+        const voices = synth.getVoices();
+        if (voices.length > 0) {{
+            setTimeout(startSpeech, 250);
+        }} else {{
+            synth.addEventListener("voiceschanged", startSpeech, {{ once: true }});
+            // 일부 브라우저는 voiceschanged 이벤트가 늦거나 발생하지 않아 대체 실행
+            setTimeout(startSpeech, 1200);
+        }}
+    }})();
     </script>
     """
 
-    components.html(html_code, height=0, width=0)
+    # 1px 크기의 숨겨진 컴포넌트로 실행하여 화면에 안내 영역이 생기지 않게 함
+    components.html(html_code, height=1, width=1)
 
 
-# 음성 안내 문장 길이와 재생 속도를 기준으로 다음 단계 전환 시간 계산
-# 음성이 끝나기 전에 다음 단계로 넘어가는 것을 방지
-
+# 음성 길이에 따라 자동 단계 전환 시간 계산
 def get_speech_duration(text, rate=1.0):
-    safe_rate = max(rate, 0.5)
+    safe_rate = max(float(rate), 0.5)
     return max(12, len(text) * 0.22 / safe_rate + 3)
 
 
 # 4. 앱 전체 소개 음성 내용
 app_intro = (
     "안녕하세요. 시각장애인 버스 탑승 보조 시스템입니다. "
-    "이 앱은 시각장애인이 버스 정보를 쉽게 확인하고 편리하게 탑승할 수 있도록 돕는 앱입니다. "
-    "이제 이용할 수 있는 기능을 차례대로 안내해 드리겠습니다. "
+    "이 앱은 시각장애인이 버스를 더욱 편리하고 안전하게 이용할 수 있도록 "
+    "도움을 주기 위해 만들어졌습니다. "
+    "먼저 음성의 속도가 너무 빠르면 파란색 버튼을 눌러주세요. "
+    "그리고 음성의 속도가 너무 느리면 빨간색 버튼을 눌러주세요. "
+    "이 앱에서는 두가지의 기능이 있습니다.  "
+    "잠시후 설명을 할텐데 지금 설명하는 기능이 내가 찾는 기능이다 싶을 때 밑의 색깔 버튼을 누르세요. "
+    "음성을 놓쳐 버튼을 누르지 못하셨다면 조금 기다리시면 됩니다. "
+    "목적지에 편히 도달하시길 바랍니다. "
+    "안내를 시작하겠습니다. "
+
 )
 
 
@@ -308,16 +338,16 @@ if step not in step_data:
 current_info = step_data[step]
 
 
-# 앱 첫 접속 시 앱 소개를 먼저 말한 뒤 기능 1 설명까지 끊김 없이 안내
+# 앱 첫 접속 시 앱 소개를 먼저 말한 뒤 기능 1 설명까지 연속 안내
 if not st.session_state.intro_played:
 
+    first_voice_script = app_intro + " " + current_info["script"]
+
+    # 음성 안내가 실행될 내용을 먼저 기록하고, 재실행 시 중복 재생 방지
     st.session_state.intro_played = True
     st.session_state.intro_just_started = True
     st.session_state.last_spoken_step = step
 
-    first_voice_script = app_intro + " " + current_info["script"]
-
-    # 앱 소개와 첫 번째 기능 설명 전체 길이에 맞춰 자동 전환 시간 설정
     st.session_state.auto_next_at = time.time() + get_speech_duration(
         first_voice_script,
         st.session_state.speech_rate
@@ -328,18 +358,17 @@ if not st.session_state.intro_played:
         st.session_state.speech_rate
     )
 
-# 화면이 다시 실행되더라도 같은 기능의 음성 안내가 반복되지 않도록 확인
+# 기능 단계가 실제로 바뀐 경우에만 해당 기능 음성 안내 실행
 elif st.session_state.last_spoken_step != step:
 
     st.session_state.last_spoken_step = step
 
-    speak_text(
+    st.session_state.auto_next_at = time.time() + get_speech_duration(
         current_info["script"],
         st.session_state.speech_rate
     )
 
-    # 현재 기능 설명의 길이에 맞춰 다음 단계 전환 시간 설정
-    st.session_state.auto_next_at = time.time() + get_speech_duration(
+    speak_text(
         current_info["script"],
         st.session_state.speech_rate
     )
