@@ -1,4 +1,3 @@
-
 import streamlit as st
 import streamlit.components.v1 as components
 import time
@@ -31,6 +30,10 @@ if "intro_just_started" not in st.session_state:
 if "auto_next_at" not in st.session_state:
     st.session_state.auto_next_at = None
 
+# 마지막으로 음성 안내를 실행한 기능 단계
+if "last_spoken_step" not in st.session_state:
+    st.session_state.last_spoken_step = None
+
 
 # 3. 음성 안내 함수
 def speak_text(text, rate=1.0):
@@ -53,19 +56,19 @@ def speak_text(text, rate=1.0):
     components.html(html_code, height=0, width=0)
 
 
+# 음성 안내 문장 길이와 재생 속도를 기준으로 다음 단계 전환 시간 계산
+# 음성이 끝나기 전에 다음 단계로 넘어가는 것을 방지
+
+def get_speech_duration(text, rate=1.0):
+    safe_rate = max(rate, 0.5)
+    return max(12, len(text) * 0.22 / safe_rate + 3)
+
+
 # 4. 앱 전체 소개 음성 내용
 app_intro = (
     "안녕하세요. 시각장애인 버스 탑승 보조 시스템입니다. "
-    "이 앱은 시각장애인이 버스를 더욱 편리하고 안전하게 이용할 수 있도록 "
-    "도움을 주기 위해 만들어졌습니다. "
-    "먼저 음성의 속도가 너무 빠르면 파란색 버튼을 눌러주세요. "
-    "그리고 음성의 속도가 너무 느리면 빨간색 버튼을 눌러주세요. "
-    "이 앱에서는 두가지의 기능이 있습니다.  "
-    "잠시후 설명을 할텐데 지금 설명하는 기능이 내가 찾는 기능이다 싶을 때 밑의 색깔 버튼을 누르세요. "
-    "음성을 놓쳐 버튼을 누르지 못하셨다면 조금 기다리시면 됩니다. "
-    "목적지에 편히 도달하시길 바랍니다. "
-    "안내를 시작하겠습니다. "
-
+    "이 앱은 시각장애인이 버스 정보를 쉽게 확인하고 편리하게 탑승할 수 있도록 돕는 앱입니다. "
+    "이제 이용할 수 있는 기능을 차례대로 안내해 드리겠습니다. "
 )
 
 
@@ -305,29 +308,47 @@ if step not in step_data:
 current_info = step_data[step]
 
 
-# 앱 첫 접속 시 앱 소개 + 기능 1 음성 자동 안내
+# 앱 첫 접속 시 앱 소개를 먼저 말한 뒤 기능 1 설명까지 끊김 없이 안내
 if not st.session_state.intro_played:
 
     st.session_state.intro_played = True
     st.session_state.intro_just_started = True
+    st.session_state.last_spoken_step = step
 
-    # 앱 소개 시간 확보: 60초
-    st.session_state.auto_next_at = time.time() + 60
+    first_voice_script = app_intro + " " + current_info["script"]
 
-    speak_text(
-        app_intro + " " + current_info["script"],
+    # 앱 소개와 첫 번째 기능 설명 전체 길이에 맞춰 자동 전환 시간 설정
+    st.session_state.auto_next_at = time.time() + get_speech_duration(
+        first_voice_script,
         st.session_state.speech_rate
     )
 
-else:
-    # 기존 기능 안내
+    speak_text(
+        first_voice_script,
+        st.session_state.speech_rate
+    )
+
+# 화면이 다시 실행되더라도 같은 기능의 음성 안내가 반복되지 않도록 확인
+elif st.session_state.last_spoken_step != step:
+
+    st.session_state.last_spoken_step = step
+
     speak_text(
         current_info["script"],
         st.session_state.speech_rate
     )
 
-    if st.session_state.auto_next_at is None:
-        st.session_state.auto_next_at = time.time() + 12
+    # 현재 기능 설명의 길이에 맞춰 다음 단계 전환 시간 설정
+    st.session_state.auto_next_at = time.time() + get_speech_duration(
+        current_info["script"],
+        st.session_state.speech_rate
+    )
+
+elif st.session_state.auto_next_at is None:
+    st.session_state.auto_next_at = time.time() + get_speech_duration(
+        current_info["script"],
+        st.session_state.speech_rate
+    )
 
 
 # 기능 설명 카드
@@ -452,6 +473,10 @@ with col_replay:
         use_container_width=True
     ):
         speak_text(
+            current_info["script"],
+            st.session_state.speech_rate
+        )
+        st.session_state.auto_next_at = time.time() + get_speech_duration(
             current_info["script"],
             st.session_state.speech_rate
         )
