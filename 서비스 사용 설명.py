@@ -49,18 +49,12 @@ def speak_text(text, rate=1.0):
     components.html(html_code, height=0, width=0)
 
 
-# 4. 앱 전체 소개 음성 내용 (문장별로 자연스럽게 이어지도록 배열 구조로 활용)
-app_intro_sentences = [
+# 4. 수정된 앱 사용법 음성 내용 (문장별 배열 큐)
+app_usage_sentences = [
     "안녕하세요.",
-    "시각장애인 버스 탑승 보조 시스템입니다.",
-    "이 앱은 시각장애인이 버스를 더욱 편리하고 안전하게 이용할 수 있도록 도움을 주기 위해 만들어졌습니다.",
-    "먼저 음성의 속도가 너무 빠르면 파란색 버튼을 눌러주세요.",
-    "그리고 음성의 속도가 너무 느리면 빨간색 버튼을 눌러주세요.",
-    "이 앱에서는 두 가지의 기능이 있습니다.",
-    "잠시 후 설명을 할 텐데 지금 설명하는 기능이 내가 찾는 기능이다 싶을 때 밑의 색깔 버튼을 누르세요.",
-    "음성을 놓쳐 버튼을 누르지 못하셨다면 조금 기다리시면 됩니다.",
-    "목적지에 편히 도달하시길 바랍니다.",
-    "안내를 시작하겠습니다."
+    "시각장애인 버스 탑승 보조 시스템 앱 사용법을 안내해 드립니다.",
+    "음성이 너무 느리면 파란색 버튼을, 빠르면 빨간색 버튼을 눌러주세요.",
+    "이제 앱의 두 기능을 소개할 텐데, 설명에 맞게 밑의 색깔 버튼을 눌러주세요."
 ]
 
 
@@ -236,10 +230,10 @@ st.markdown(
 )
 
 
-# 앱 소개 음성 안내 버튼 (문장 배열 순차 재생 큐 및 실시간 speech_rate 반영)
-intro_button_html = f"""
+# 앱 사용법 음성 안내 버튼 (현재 설정된 speech_rate 반영)
+usage_button_html = f"""
 <div style="width:100%; padding:2px 0 12px 0;">
-    <button id="app-intro-button" type="button"
+    <button id="app-usage-button" type="button"
         style="
             width:100%;
             min-height:78px;
@@ -251,12 +245,12 @@ intro_button_html = f"""
             font-weight:900;
             cursor:pointer;
         ">
-        🔊 앱 소개 듣기
+        🔊 앱 사용법 듣기
     </button>
 </div>
 <script>
 (() => {{
-    const button = document.getElementById("app-intro-button");
+    const button = document.getElementById("app-usage-button");
     if (!button) return;
 
     button.addEventListener("click", () => {{
@@ -269,15 +263,15 @@ intro_button_html = f"""
         synth.cancel();
         synth.resume();
 
-        const sentences = {json.dumps(app_intro_sentences, ensure_ascii=False)};
+        const sentences = {json.dumps(app_usage_sentences, ensure_ascii=False)};
         const rate = {st.session_state.speech_rate};
         let index = 0;
 
-        button.innerText = "🔊 앱 소개 재생 중...";
+        button.innerText = "🔊 앱 사용법 재생 중...";
 
         function playNext() {{
             if (index >= sentences.length) {{
-                button.innerText = "🔊 앱 소개 다시 듣기";
+                button.innerText = "🔊 앱 사용법 다시 듣기";
                 return;
             }}
 
@@ -304,7 +298,7 @@ intro_button_html = f"""
 </script>
 """
 
-components.html(intro_button_html, height=100, width=None)
+components.html(usage_button_html, height=100, width=None)
 
 
 # 7. 음성 속도 조절 버튼 (클릭 시 실시간 배속 반영 및 새로고침)
