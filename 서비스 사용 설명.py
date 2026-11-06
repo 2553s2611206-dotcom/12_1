@@ -1,4 +1,3 @@
-
 import streamlit as st
 import streamlit.components.v1 as components
 import time
@@ -56,6 +55,15 @@ st.markdown(
 
     h1, h2, h3, p {
         color: #000000;
+    }
+
+    /* 음성 조절 영역 안내 설명 스타일 */
+    .section-label {
+        font-size: 24px !important;
+        font-weight: 800 !important;
+        color: #111111 !important;
+        margin-bottom: 10px !important;
+        text-align: center;
     }
 
     /* 음성 조절 버튼 공통 디자인 */
@@ -171,6 +179,10 @@ st.markdown(
             height: 120px !important;
         }
 
+        .section-label {
+            font-size: 20px !important;
+        }
+
         .feature-title {
             font-size: 28px;
         }
@@ -210,7 +222,12 @@ st.markdown(
 )
 
 
-# 6. 음성 속도 조절 버튼
+# 6. 음성 속도 조절 버튼 상단 설명 및 버튼 배치
+st.markdown(
+    '<div class="section-label">🔊 안내 음성 속도 조절 버튼</div>',
+    unsafe_allow_html=True
+)
+
 col_left, col_right = st.columns(2)
 
 with col_left:
@@ -414,7 +431,7 @@ with col_next:
     if st.button(
         "다음 안내 ➡️",
         key="next_btn",
-        use_container_width=True
+        use_container_width=Yn:=True
     ):
         st.session_state.current_step = (
             2 if st.session_state.current_step == 1 else 1
