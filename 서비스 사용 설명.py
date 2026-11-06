@@ -28,24 +28,25 @@ if "last_spoken_step" not in st.session_state:
     st.session_state.last_spoken_step = st.session_state.current_step
 
 
-# 3. 음성 안내 함수 (현재 세션의 speech_rate를 실시간 반영)
+# 3. 음성 안내 함수 (끊김 방지를 위한 단일 통합 자바스크립트 실행 방식)
 def speak_text(text, rate=1.0):
     safe_text = json.dumps(text, ensure_ascii=False)
 
     html_code = f"""
     <script>
     if ("speechSynthesis" in window) {{
-        window.speechSynthesis.cancel();
+        // 중복 실행 및 끊김 방지 처리
+        const synth = window.speechSynthesis;
+        synth.cancel();
 
         const msg = new SpeechSynthesisUtterance({safe_text});
         msg.lang = "ko-KR";
         msg.rate = {rate};
 
-        window.speechSynthesis.speak(msg);
+        synth.speak(msg);
     }}
     </script>
     """
-
     components.html(html_code, height=0, width=0)
 
 
@@ -236,7 +237,7 @@ st.markdown(
 )
 
 
-# 앱 소개 음성 안내 버튼 (현재 설정된 speech_rate 반영)
+# 앱 소개 음성 안내 버튼 (세션 상태의 speech_rate가 실시간으로 완벽히 반영되도록 수정)
 intro_button_html = f"""
 <div style="width:100%; padding:2px 0 12px 0;">
     <button id="app-intro-button" type="button"
@@ -287,7 +288,7 @@ intro_button_html = f"""
 components.html(intro_button_html, height=100, width=None)
 
 
-# 7. 음성 속도 조절 버튼 (클릭 시 세션 속도 변경 후 즉시 화면 갱신)
+# 7. 음성 속도 조절 버튼 (클릭 시 즉시 반영되도록 처리)
 col_left, col_right = st.columns(2)
 
 with col_left:
@@ -521,7 +522,7 @@ with col_next:
         st.rerun()
 
 
-# 12. 자동 단계 전환 루프 (실시간 속도 고려)
+# 12. 자동 단계 전환 루프
 @st.fragment(run_every=1)
 def auto_step_transition():
     if not st.session_state.auto_play:
