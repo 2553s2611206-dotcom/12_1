@@ -211,18 +211,19 @@ st.markdown(
 
 
 # 6. 음성 속도 조절 버튼
-# 안내 문구 글씨 크기: 24px
+# 안내 문구 글씨 크기 축소 및 줄바꿈 적용
 st.markdown(
     """
     <div style="
         text-align: center;
-        font-size: 24px;
+        font-size: 20px;
         font-weight: 900;
         color: #000000;
-        margin-bottom: 15px;
+        line-height: 1.8;
+        margin-bottom: 20px;
     ">
-        이 앱은 시각장애인들의 버스 이용을 위한 앱입니다.
-        안내를 듣고 해당기능을 원하신다면 밑에 색깔 버튼을 눌러주세요.
+        이 앱은 시각장애인들의 버스 이용을 위한 앱입니다.<br>
+        안내를 듣고 해당 기능을 원하신다면 밑에 색깔 버튼을 눌러주세요.
     </div>
     """,
     unsafe_allow_html=True
