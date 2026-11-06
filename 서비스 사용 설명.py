@@ -44,10 +44,11 @@ def speak_text(text, rate=1.0):
     components.html(html_code, height=0, width=0)
 
 
-# 4. CSS 디자인
+# 4. 전체 CSS 디자인
 st.markdown(
     """
     <style>
+    /* 전체 화면 */
     .stApp {
         background-color: #FFFFFF !important;
         color: #000000 !important;
@@ -57,7 +58,7 @@ st.markdown(
         color: #000000;
     }
 
-    /* 음성 조절 버튼 공통 스타일 */
+    /* 음성 조절 버튼 공통 디자인 */
     div.st-key-slow_btn button,
     div.st-key-fast_btn button {
         width: 100% !important;
@@ -70,7 +71,7 @@ st.markdown(
         opacity: 1 !important;
     }
 
-    /* 음성 느리게 - 파란색 */
+    /* 음성 느리게: 파란색 */
     div.st-key-slow_btn button {
         background: #0055FF !important;
         background-color: #0055FF !important;
@@ -78,7 +79,7 @@ st.markdown(
         border: 5px solid #003399 !important;
     }
 
-    /* 음성 빠르게 - 빨간색 */
+    /* 음성 빠르게: 빨간색 */
     div.st-key-fast_btn button {
         background: #FF0000 !important;
         background-color: #FF0000 !important;
@@ -86,14 +87,14 @@ st.markdown(
         border: 5px solid #990000 !important;
     }
 
-    /* 기능 안내 카드 */
+    /* 기능 설명 카드 */
     .feature-card {
         background-color: #F5F8FF;
         border: 4px solid #222222;
         border-radius: 24px;
         padding: 35px;
         margin-top: 20px;
-        margin-bottom: 15px;
+        margin-bottom: 20px;
         text-align: center;
     }
 
@@ -101,6 +102,7 @@ st.markdown(
         color: #000000;
         font-size: 36px;
         font-weight: 900;
+        line-height: 1.5;
         margin-bottom: 25px;
     }
 
@@ -111,20 +113,33 @@ st.markdown(
         font-weight: 700;
     }
 
-    /* 기능 페이지 이동 버튼 */
+    /* 기능 페이지 이동 버튼 공통 디자인 */
     div[data-testid="stPageLink"] a {
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
-        min-height: 85px !important;
-        padding: 18px !important;
-        border: 4px solid #111111 !important;
-        border-radius: 18px !important;
-        font-size: 23px !important;
+        width: 100% !important;
+        min-height: 120px !important;
+        box-sizing: border-box !important;
+        padding: 24px !important;
+        margin-top: 15px !important;
+        margin-bottom: 20px !important;
+        border: 5px solid #222222 !important;
+        border-radius: 22px !important;
+        font-size: 30px !important;
         font-weight: 900 !important;
+        line-height: 1.5 !important;
         text-align: center !important;
         text-decoration: none !important;
-        color: #FFFFFF !important;
+        box-shadow: 0 6px 0 rgba(0, 0, 0, 0.35) !important;
+    }
+
+    /* 기능 페이지 버튼 내부 글자 */
+    div[data-testid="stPageLink"] a p {
+        font-size: 30px !important;
+        font-weight: 900 !important;
+        line-height: 1.5 !important;
+        margin: 0 !important;
     }
 
     /* 하단 안내 버튼 */
@@ -138,6 +153,7 @@ st.markdown(
         border-radius: 15px !important;
     }
 
+    /* 현재 안내 상태 */
     .status-text {
         text-align: center;
         font-size: 22px;
@@ -146,6 +162,7 @@ st.markdown(
         padding: 12px;
     }
 
+    /* 모바일 화면 */
     @media (max-width: 768px) {
         div.st-key-slow_btn button,
         div.st-key-fast_btn button {
@@ -163,7 +180,13 @@ st.markdown(
         }
 
         div[data-testid="stPageLink"] a {
-            font-size: 19px !important;
+            min-height: 100px !important;
+            padding: 18px !important;
+            font-size: 23px !important;
+        }
+
+        div[data-testid="stPageLink"] a p {
+            font-size: 23px !important;
         }
     }
     </style>
@@ -218,11 +241,13 @@ with col_right:
 st.markdown("---")
 
 
-# 7. 기능 1, 2 정보
+# 7. 기능 1, 2 안내 데이터
 step_data = {
     1: {
         "title": "1️⃣ 기능 1: 목적지 기반 버스 안내",
-        "description": "목적지를 입력하면 가장 적합한 버스를 안내해 줍니다.",
+        "description": (
+            "목적지를 입력하면 가장 적합한 버스를 안내해 줍니다."
+        ),
         "script": (
             "기능 1번 안내입니다. "
             "목적지를 입력하면 가장 적합한 버스를 안내해 줍니다. "
@@ -245,7 +270,7 @@ step_data = {
 }
 
 
-# 8. 현재 기능 안내
+# 8. 현재 기능 표시
 step = st.session_state.current_step
 
 if step not in step_data:
@@ -254,33 +279,107 @@ if step not in step_data:
 
 current_info = step_data[step]
 
+# 현재 기능 음성 안내
 speak_text(
     current_info["script"],
     st.session_state.speech_rate
 )
 
-# HTML 코드가 글자로 노출되지 않도록 카드 HTML을 한 줄로 작성
+# 기능 설명 카드
 st.markdown(
-    f'<div class="feature-card">'
-    f'<div class="feature-title">{current_info["title"]}</div>'
-    f'<div class="feature-description">{current_info["description"]}</div>'
-    f'</div>',
+    f"""
+    <div class="feature-card">
+        <div class="feature-title">
+            {current_info["title"]}
+        </div>
+        <div class="feature-description">
+            {current_info["description"]}
+        </div>
+    </div>
+    """,
     unsafe_allow_html=True
 )
 
 
-# 9. 기능 페이지 이동 버튼
+# 9. 기능별 이동 버튼 색상
 if step == 1:
+    # 기능 1: 노란색 배경 + 검은색 글씨
+    st.markdown(
+        """
+        <style>
+        div[data-testid="stPageLink"] a {
+            background-color: #FFD600 !important;
+            color: #000000 !important;
+            border-color: #8A6500 !important;
+        }
+
+        div[data-testid="stPageLink"] a p {
+            color: #000000 !important;
+        }
+
+        div[data-testid="stPageLink"] a:hover {
+            background-color: #FFC400 !important;
+            color: #000000 !important;
+            border-color: #5C4300 !important;
+        }
+
+        div[data-testid="stPageLink"] a:hover p {
+            color: #000000 !important;
+        }
+
+        div[data-testid="stPageLink"] a:focus-visible {
+            outline: 5px solid #0057D9 !important;
+            outline-offset: 5px !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
     st.page_link(
         "pages/우선순위.py",
-        label="👉 [기능 1] 목적지 입력 및 버스 안내 페이지로 이동하기",
+        label="기능 1: 목적지 입력 및 버스 안내 페이지로 이동하기",
         icon="🚌",
         use_container_width=True
     )
+
 else:
+    # 기능 2: 초록색 배경 + 흰색 글씨
+    st.markdown(
+        """
+        <style>
+        div[data-testid="stPageLink"] a {
+            background-color: #008044 !important;
+            color: #FFFFFF !important;
+            border-color: #004D2A !important;
+        }
+
+        div[data-testid="stPageLink"] a p {
+            color: #FFFFFF !important;
+        }
+
+        div[data-testid="stPageLink"] a:hover {
+            background-color: #005C31 !important;
+            color: #FFFFFF !important;
+            border-color: #00351C !important;
+        }
+
+        div[data-testid="stPageLink"] a:hover p {
+            color: #FFFFFF !important;
+        }
+
+        div[data-testid="stPageLink"] a:focus-visible {
+            outline: 5px solid #FFB000 !important;
+            outline-offset: 5px !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
     st.page_link(
         "pages/카메라 인식 시스템.py",
-        label="👉 [기능 2] 카메라 버스 번호 인식 페이지로 이동하기",
+        label="기능 2: 카메라 버스 번호 인식 페이지로 이동하기",
         icon="📷",
         use_container_width=True
     )
@@ -323,7 +422,7 @@ with col_next:
         st.rerun()
 
 
-# 11. 자동 단계 전환
+# 11. 자동 단계 전환: 기능 1 ↔ 기능 2
 if st.session_state.auto_play:
     WAIT_TIME = 12
     time.sleep(WAIT_TIME)
