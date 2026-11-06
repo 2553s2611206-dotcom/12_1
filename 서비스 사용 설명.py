@@ -221,7 +221,7 @@ st.markdown(
         color: #000000;
         margin-bottom: 15px;
     ">
-        블라블라
+        이 앱은 시각장애인들의 버스 이용을 위한 앱입니다. 안내를 듣고 해당기능을 원하신다면 밑에 색깔 버튼을 눌러주세요.
     </div>
     """,
     unsafe_allow_html=True
