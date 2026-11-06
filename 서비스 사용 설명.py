@@ -25,10 +25,10 @@ if "auto_next_at" not in st.session_state:
     st.session_state.auto_next_at = None
 
 if "last_spoken_step" not in st.session_state:
-    st.session_state.last_spoken_step = st.session_state.current_step
+    st.session_state.last_spoken_step = None
 
 
-# 3. 단일 문장 음성 안내 함수 (끊김 방지 및 정확한 속도 적용)
+# 3. 음성 안내 함수 (현재 세션의 speech_rate를 정확히 반영)
 def speak_text(text, rate=1.0):
     safe_text = json.dumps(text, ensure_ascii=False)
 
@@ -49,12 +49,11 @@ def speak_text(text, rate=1.0):
     components.html(html_code, height=0, width=0)
 
 
-# 4. 수정된 앱 사용법 음성 내용 (문장별 배열 큐)
+# 4. 짧아진 앱 사용법 음성 내용 (문장별 배열 큐)
 app_usage_sentences = [
-    "안녕하세요.",
-    "시각장애인 버스 탑승 보조 시스템 앱 사용법을 안내해 드립니다.",
+    "앱 사용법을 안내합니다.",
     "음성이 너무 느리면 파란색 버튼을, 빠르면 빨간색 버튼을 눌러주세요.",
-    "이제 앱의 두 기능을 소개할 텐데, 설명에 맞게 밑의 색깔 버튼을 눌러주세요."
+    "이제 두 가지 기능을 소개합니다. 설명에 맞게 아래의 색깔 버튼을 눌러주세요."
 ]
 
 
@@ -361,7 +360,7 @@ step_data = {
 }
 
 
-# 9. 현재 기능 단계 확인
+# 9. 현재 기능 단계 확인 및 기능 설명 음성 강제 출력 트리거
 step = st.session_state.current_step
 
 if step not in step_data:
@@ -370,7 +369,6 @@ if step not in step_data:
 
 current_info = step_data[step]
 
-
 # 초기 자동 전환 시간 설정
 if st.session_state.auto_next_at is None:
     st.session_state.auto_next_at = time.time() + get_speech_duration(
@@ -378,18 +376,13 @@ if st.session_state.auto_next_at is None:
         st.session_state.speech_rate
     )
 
-# 단계가 변경되었을 때에만 해당 기능의 음성 안내를 최신 속도로 실행
-if "last_spoken_step" not in st.session_state:
+# 처음 실행되거나 단계/배속이 바뀔 때 기능 페이지 설명 음성이 확실히 나오도록 처리
+if (
+    st.session_state.last_spoken_step != step
+    or st.session_state.last_spoken_step is None
+):
     st.session_state.last_spoken_step = step
-
-elif st.session_state.last_spoken_step != step:
-    st.session_state.last_spoken_step = step
-
-    speak_text(
-        current_info["script"],
-        st.session_state.speech_rate
-    )
-
+    speak_text(current_info["script"], st.session_state.speech_rate)
     st.session_state.auto_next_at = time.time() + get_speech_duration(
         current_info["script"],
         st.session_state.speech_rate
