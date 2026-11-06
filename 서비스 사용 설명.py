@@ -21,9 +21,6 @@ if "current_step" not in st.session_state:
 if "auto_play" not in st.session_state:
     st.session_state.auto_play = True
 
-if "intro_played" not in st.session_state:
-    st.session_state.intro_played = False
-
 if "auto_next_at" not in st.session_state:
     st.session_state.auto_next_at = None
 
@@ -31,7 +28,7 @@ if "last_spoken_step" not in st.session_state:
     st.session_state.last_spoken_step = st.session_state.current_step
 
 
-# 3. 음성 안내 함수
+# 3. 음성 안내 함수 (현재 세션의 speech_rate를 실시간 반영)
 def speak_text(text, rate=1.0):
     safe_text = json.dumps(text, ensure_ascii=False)
 
@@ -239,7 +236,7 @@ st.markdown(
 )
 
 
-# 앱 소개 음성 안내 버튼 (세션 상태의 음성 속도가 실시간으로 반영되도록 구현)
+# 앱 소개 음성 안내 버튼 (현재 설정된 speech_rate 반영)
 intro_button_html = f"""
 <div style="width:100%; padding:2px 0 12px 0;">
     <button id="app-intro-button" type="button"
@@ -290,7 +287,7 @@ intro_button_html = f"""
 components.html(intro_button_html, height=100, width=None)
 
 
-# 7. 음성 속도 조절 버튼
+# 7. 음성 속도 조절 버튼 (클릭 시 세션 속도 변경 후 즉시 화면 갱신)
 col_left, col_right = st.columns(2)
 
 with col_left:
@@ -321,7 +318,7 @@ with col_right:
 st.markdown("---")
 
 
-# 8. 기능 1, 2 안내 데이터
+# 8. 기능 1, 2 안내 데이터 정의
 step_data = {
     1: {
         "title": "1️⃣ 기능 1: 목적지 기반 버스 안내",
@@ -350,7 +347,7 @@ step_data = {
 }
 
 
-# 9. 현재 기능 표시
+# 9. 현재 기능 단계 확인
 step = st.session_state.current_step
 
 if step not in step_data:
@@ -363,11 +360,11 @@ current_info = step_data[step]
 # 초기 자동 전환 시간 설정
 if st.session_state.auto_next_at is None:
     st.session_state.auto_next_at = time.time() + get_speech_duration(
-        step_data[1]["script"],
+        current_info["script"],
         st.session_state.speech_rate
     )
 
-# 기능 단계가 변경되었을 때에만 해당 기능의 음성 안내를 실행
+# 단계가 변경되었을 때에만 해당 기능의 음성 안내를 최신 속도로 실행
 if "last_spoken_step" not in st.session_state:
     st.session_state.last_spoken_step = step
 
@@ -385,7 +382,7 @@ elif st.session_state.last_spoken_step != step:
     )
 
 
-# 기능 설명 카드
+# 기능 설명 카드 렌더링
 st.markdown(
     f"""
     <div class="feature-card">
@@ -401,7 +398,7 @@ st.markdown(
 )
 
 
-# 10. 기능별 이동 버튼 색상
+# 10. 기능별 이동 버튼 색상 및 링크 설정
 if step == 1:
     # 기능 1: 노란색 배경 + 검은색 글씨
     st.markdown(
@@ -485,7 +482,7 @@ else:
     )
 
 
-# 11. 이전 안내 / 다시 듣기 / 다음 안내
+# 11. 이전 안내 / 다시 듣기 / 다음 안내 버튼
 col_prev, col_replay, col_next = st.columns(3)
 
 with col_prev:
@@ -524,10 +521,9 @@ with col_next:
         st.rerun()
 
 
-# 12. 자동 단계 전환
+# 12. 자동 단계 전환 루프 (실시간 속도 고려)
 @st.fragment(run_every=1)
 def auto_step_transition():
-
     if not st.session_state.auto_play:
         return
 
@@ -535,13 +531,16 @@ def auto_step_transition():
         return
 
     if time.time() >= st.session_state.auto_next_at:
-
         st.session_state.current_step = (
             2 if st.session_state.current_step == 1 else 1
         )
-
-        st.session_state.auto_next_at = time.time() + 12
-
+        st.session_state.auto_next_at = (
+            time.time()
+            + get_speech_duration(
+                step_data[st.session_state.current_step]["script"],
+                st.session_state.speech_rate
+            )
+        )
         st.rerun()
 
 
