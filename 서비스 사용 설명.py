@@ -1,4 +1,3 @@
-
 import streamlit as st
 import streamlit.components.v1 as components
 import time
@@ -24,9 +23,6 @@ if "auto_play" not in st.session_state:
 
 if "intro_played" not in st.session_state:
     st.session_state.intro_played = False
-
-if "intro_just_started" not in st.session_state:
-    st.session_state.intro_just_started = False
 
 if "auto_next_at" not in st.session_state:
     st.session_state.auto_next_at = None
@@ -63,12 +59,11 @@ app_intro = (
     "도움을 주기 위해 만들어졌습니다. "
     "먼저 음성의 속도가 너무 빠르면 파란색 버튼을 눌러주세요. "
     "그리고 음성의 속도가 너무 느리면 빨간색 버튼을 눌러주세요. "
-    "이 앱에서는 두가지의 기능이 있습니다.  "
-    "잠시후 설명을 할텐데 지금 설명하는 기능이 내가 찾는 기능이다 싶을 때 밑의 색깔 버튼을 누르세요. "
+    "이 앱에서는 두 가지의 기능이 있습니다. "
+    "잠시 후 설명을 할 텐데 지금 설명하는 기능이 내가 찾는 기능이다 싶을 때 밑의 색깔 버튼을 누르세요. "
     "음성을 놓쳐 버튼을 누르지 못하셨다면 조금 기다리시면 됩니다. "
     "목적지에 편히 도달하시길 바랍니다. "
-    "안내를 시작하겠습니다. "
-
+    "안내를 시작하겠습니다."
 )
 
 
@@ -244,10 +239,8 @@ st.markdown(
 )
 
 
-# 앱 소개 음성 안내 버튼
-# iframe 안의 실제 버튼 클릭 이벤트에서 음성을 실행하여
-# 브라우저의 자동 재생 제한에 걸릴 가능성을 줄임
-intro_button_html = """
+# 앱 소개 음성 안내 버튼 (세션 상태의 음성 속도가 실시간으로 반영되도록 구현)
+intro_button_html = f"""
 <div style="width:100%; padding:2px 0 12px 0;">
     <button id="app-intro-button" type="button"
         style="
@@ -265,68 +258,34 @@ intro_button_html = """
     </button>
 </div>
 <script>
-(() => {
+(() => {{
     const button = document.getElementById("app-intro-button");
     if (!button) return;
 
-    button.addEventListener("click", () => {
-        if (!("speechSynthesis" in window)) {
+    button.addEventListener("click", () => {{
+        if (!("speechSynthesis" in window)) {{
             button.innerText = "이 브라우저는 음성 안내를 지원하지 않습니다.";
             return;
-        }
+        }}
 
         const synth = window.speechSynthesis;
         synth.cancel();
         synth.resume();
 
-        const introUtterance = new SpeechSynthesisUtterance(__APP_INTRO__);
-        const featureUtterance = new SpeechSynthesisUtterance(__FEATURE_ONE__);
-
+        const introUtterance = new SpeechSynthesisUtterance({json.dumps(app_intro, ensure_ascii=False)});
         introUtterance.lang = "ko-KR";
-        featureUtterance.lang = "ko-KR";
-        introUtterance.rate = __SPEECH_RATE__;
-        featureUtterance.rate = __SPEECH_RATE__;
+        introUtterance.rate = {st.session_state.speech_rate};
 
-        // 앱 소개가 끝난 직후 기능 1 설명을 이어서 재생
-        introUtterance.onend = () => {
-            synth.speak(featureUtterance);
-        };
-
-        button.innerText = "🔊 앱 소개 및 기능 안내 재생 중";
-        featureUtterance.onend = () => {
+        button.innerText = "🔊 앱 소개 재생 중";
+        introUtterance.onend = () => {{
             button.innerText = "🔊 앱 소개 다시 듣기";
-        };
+        }};
 
         synth.speak(introUtterance);
-    });
-})();
+    }});
+}})();
 </script>
 """
-
-intro_text = (
-    "안녕하세요. 시각장애인 버스 탑승 보조 시스템입니다. "
-    "이 앱은 시각장애인이 버스를 더욱 편리하고 안전하게 이용할 수 있도록 "
-    "도움을 주기 위해 만들어졌습니다. "
-    "먼저 음성의 속도가 너무 빠르면 파란색 버튼을 눌러주세요. "
-    "그리고 음성의 속도가 너무 느리면 빨간색 버튼을 눌러주세요. "
-    "이 앱에서는 두가지의 기능이 있습니다.  "
-    "잠시후 설명을 할텐데 지금 설명하는 기능이 내가 찾는 기능이다 싶을 때 밑의 색깔 버튼을 누르세요. "
-    "음성을 놓쳐 버튼을 누르지 못하셨다면 조금 기다리시면 됩니다. "
-    "목적지에 편히 도달하시길 바랍니다. "
-    "안내를 시작하겠습니다. "
-)
-feature_one_text = (
-    "기능 1번 안내입니다. "
-    "목적지를 입력하면 가장 적합한 버스를 안내해 줍니다. "
-    "기능 1 페이지로 이동하려면 기능 1 버튼을 눌러주세요."
-)
-
-intro_button_html = (
-    intro_button_html
-    .replace("__APP_INTRO__", json.dumps(intro_text, ensure_ascii=False))
-    .replace("__FEATURE_ONE__", json.dumps(feature_one_text, ensure_ascii=False))
-    .replace("__SPEECH_RATE__", str(st.session_state.speech_rate))
-)
 
 components.html(intro_button_html, height=100, width=None)
 
@@ -401,18 +360,14 @@ if step not in step_data:
 current_info = step_data[step]
 
 
-# 앱 소개는 위쪽 보라색 버튼을 눌렀을 때만 재생
-# 앱 소개가 끝나면 버튼 내부에서 기능 1 설명이 바로 이어서 재생됨.
-# 자동 단계 전환 시간은 앱 소개와 기능 1 안내 길이를 기준으로 설정.
+# 초기 자동 전환 시간 설정
 if st.session_state.auto_next_at is None:
-    first_voice_script = app_intro + " " + step_data[1]["script"]
     st.session_state.auto_next_at = time.time() + get_speech_duration(
-        first_voice_script,
+        step_data[1]["script"],
         st.session_state.speech_rate
     )
 
-# 처음 화면에서는 자동 음성을 실행하지 않음.
-# 기능 단계가 변경되었을 때에만 해당 기능의 음성 안내를 실행.
+# 기능 단계가 변경되었을 때에만 해당 기능의 음성 안내를 실행
 if "last_spoken_step" not in st.session_state:
     st.session_state.last_spoken_step = step
 
@@ -570,9 +525,6 @@ with col_next:
 
 
 # 12. 자동 단계 전환
-# time.sleep()을 사용하지 않아 화면이 멈추거나
-# 중복된 화면이 희미하게 남는 현상을 방지
-
 @st.fragment(run_every=1)
 def auto_step_transition():
 
@@ -588,9 +540,6 @@ def auto_step_transition():
             2 if st.session_state.current_step == 1 else 1
         )
 
-        st.session_state.intro_just_started = False
-
-        # 다음 자동 전환까지 12초 설정
         st.session_state.auto_next_at = time.time() + 12
 
         st.rerun()
