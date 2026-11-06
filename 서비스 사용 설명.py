@@ -28,14 +28,13 @@ if "last_spoken_step" not in st.session_state:
     st.session_state.last_spoken_step = st.session_state.current_step
 
 
-# 3. 음성 안내 함수 (끊김 방지를 위한 단일 통합 자바스크립트 실행 방식)
+# 3. 단일 문장 음성 안내 함수 (끊김 방지 및 정확한 속도 적용)
 def speak_text(text, rate=1.0):
     safe_text = json.dumps(text, ensure_ascii=False)
 
     html_code = f"""
     <script>
     if ("speechSynthesis" in window) {{
-        // 중복 실행 및 끊김 방지 처리
         const synth = window.speechSynthesis;
         synth.cancel();
 
@@ -50,19 +49,19 @@ def speak_text(text, rate=1.0):
     components.html(html_code, height=0, width=0)
 
 
-# 4. 앱 전체 소개 음성 내용
-app_intro = (
-    "안녕하세요. 시각장애인 버스 탑승 보조 시스템입니다. "
-    "이 앱은 시각장애인이 버스를 더욱 편리하고 안전하게 이용할 수 있도록 "
-    "도움을 주기 위해 만들어졌습니다. "
-    "먼저 음성의 속도가 너무 빠르면 파란색 버튼을 눌러주세요. "
-    "그리고 음성의 속도가 너무 느리면 빨간색 버튼을 눌러주세요. "
-    "이 앱에서는 두 가지의 기능이 있습니다. "
-    "잠시 후 설명을 할 텐데 지금 설명하는 기능이 내가 찾는 기능이다 싶을 때 밑의 색깔 버튼을 누르세요. "
-    "음성을 놓쳐 버튼을 누르지 못하셨다면 조금 기다리시면 됩니다. "
-    "목적지에 편히 도달하시길 바랍니다. "
+# 4. 앱 전체 소개 음성 내용 (문장별로 자연스럽게 이어지도록 배열 구조로 활용)
+app_intro_sentences = [
+    "안녕하세요.",
+    "시각장애인 버스 탑승 보조 시스템입니다.",
+    "이 앱은 시각장애인이 버스를 더욱 편리하고 안전하게 이용할 수 있도록 도움을 주기 위해 만들어졌습니다.",
+    "먼저 음성의 속도가 너무 빠르면 파란색 버튼을 눌러주세요.",
+    "그리고 음성의 속도가 너무 느리면 빨간색 버튼을 눌러주세요.",
+    "이 앱에서는 두 가지의 기능이 있습니다.",
+    "잠시 후 설명을 할 텐데 지금 설명하는 기능이 내가 찾는 기능이다 싶을 때 밑의 색깔 버튼을 누르세요.",
+    "음성을 놓쳐 버튼을 누르지 못하셨다면 조금 기다리시면 됩니다.",
+    "목적지에 편히 도달하시길 바랍니다.",
     "안내를 시작하겠습니다."
-)
+]
 
 
 # 음성 안내 문장 길이에 따라 자동 단계 전환 시간 계산
@@ -237,7 +236,7 @@ st.markdown(
 )
 
 
-# 앱 소개 음성 안내 버튼 (세션 상태의 speech_rate가 실시간으로 완벽히 반영되도록 수정)
+# 앱 소개 음성 안내 버튼 (문장 배열 순차 재생 큐 및 실시간 speech_rate 반영)
 intro_button_html = f"""
 <div style="width:100%; padding:2px 0 12px 0;">
     <button id="app-intro-button" type="button"
@@ -270,16 +269,36 @@ intro_button_html = f"""
         synth.cancel();
         synth.resume();
 
-        const introUtterance = new SpeechSynthesisUtterance({json.dumps(app_intro, ensure_ascii=False)});
-        introUtterance.lang = "ko-KR";
-        introUtterance.rate = {st.session_state.speech_rate};
+        const sentences = {json.dumps(app_intro_sentences, ensure_ascii=False)};
+        const rate = {st.session_state.speech_rate};
+        let index = 0;
 
-        button.innerText = "🔊 앱 소개 재생 중";
-        introUtterance.onend = () => {{
-            button.innerText = "🔊 앱 소개 다시 듣기";
-        }};
+        button.innerText = "🔊 앱 소개 재생 중...";
 
-        synth.speak(introUtterance);
+        function playNext() {{
+            if (index >= sentences.length) {{
+                button.innerText = "🔊 앱 소개 다시 듣기";
+                return;
+            }}
+
+            const utterance = new SpeechSynthesisUtterance(sentences[index]);
+            utterance.lang = "ko-KR";
+            utterance.rate = rate;
+
+            utterance.onend = () => {{
+                index++;
+                playNext();
+            }};
+
+            utterance.onerror = () => {{
+                index++;
+                playNext();
+            }};
+
+            synth.speak(utterance);
+        }}
+
+        playNext();
     }});
 }})();
 </script>
@@ -288,7 +307,7 @@ intro_button_html = f"""
 components.html(intro_button_html, height=100, width=None)
 
 
-# 7. 음성 속도 조절 버튼 (클릭 시 즉시 반영되도록 처리)
+# 7. 음성 속도 조절 버튼 (클릭 시 실시간 배속 반영 및 새로고침)
 col_left, col_right = st.columns(2)
 
 with col_left:
