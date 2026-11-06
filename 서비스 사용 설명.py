@@ -1,6 +1,5 @@
 import streamlit as st
 import streamlit.components.v1 as components
-import time
 import json
 
 # 1. 페이지 기본 설정
@@ -18,17 +17,8 @@ if "speech_rate" not in st.session_state:
 if "current_step" not in st.session_state:
     st.session_state.current_step = 1
 
-if "auto_play" not in st.session_state:
-    st.session_state.auto_play = True
 
-if "auto_next_at" not in st.session_state:
-    st.session_state.auto_next_at = None
-
-if "last_spoken_step" not in st.session_state:
-    st.session_state.last_spoken_step = None
-
-
-# 3. 음성 안내 함수 (현재 세션의 speech_rate를 정확히 반영)
+# 3. 음성 안내 함수 (브라우저 자바스크립트 TTS 호출)
 def speak_text(text, rate=1.0):
     safe_text = json.dumps(text, ensure_ascii=False)
 
@@ -49,63 +39,73 @@ def speak_text(text, rate=1.0):
     components.html(html_code, height=0, width=0)
 
 
-# 4. 앱 사용법 안내 멘트 (짧은 버전)
-app_usage_sentences = [
-    "앱 사용법을 안내합니다.",
-    "음성이 너무 느리면 파란색 버튼을, 빠르면 빨간색 버튼을 눌러주세요.",
+# 4. 안내 멘트 정의
+app_usage_text = (
+    "앱 사용법을 안내합니다. "
+    "음성이 너무 느리면 파란색 버튼을, 빠르면 빨간색 버튼을 눌러주세요. "
     "이제 두 가지 기능을 소개합니다. 설명에 맞게 아래의 색깔 버튼을 눌러주세요."
-]
+)
 
-
-# 음성 안내 문장 길이에 따라 자동 단계 전환 시간 계산
-def get_speech_duration(text, rate=1.0):
-    safe_rate = max(float(rate), 0.5)
-    return max(12, len(text) * 0.22 / safe_rate + 3)
+step_data = {
+    1: {
+        "title": "1️⃣ 기능 1: 목적지 기반 버스 안내",
+        "description": "목적지를 입력하면 가장 적합한 버스를 안내해 줍니다.",
+        "script": "기능 1번 안내입니다. 목적지를 입력하면 가장 적합한 버스를 안내해 줍니다. 기능 1 페이지로 이동하려면 노란색 기능 1 버튼을 눌러주세요."
+    },
+    2: {
+        "title": "2️⃣ 기능 2: 카메라를 이용한 버스 번호 인식",
+        "description": "카메라로 버스를 비추면 버스 번호를 인식하여 몇 번 버스인지 알려줍니다.",
+        "script": "기능 2번 안내입니다. 카메라로 버스를 비추면 버스 번호를 인식하여 몇 번 버스인지 알려줍니다. 기능 2 페이지로 이동하려면 초록색 기능 2 버튼을 눌러주세요."
+    }
+}
 
 
 # 5. 전체 CSS 디자인
 st.markdown(
     """
     <style>
-    /* 전체 화면 */
     .stApp {
         background-color: #FFFFFF !important;
         color: #000000 !important;
     }
-
     h1, h2, h3, p {
         color: #000000;
     }
-
-    /* 음성 조절 버튼 공통 디자인 */
+    /* 음성 조절 버튼 디자인 */
     div.st-key-slow_btn button,
     div.st-key-fast_btn button {
         width: 100% !important;
-        min-height: 150px !important;
-        height: 150px !important;
-        font-size: 32px !important;
+        min-height: 140px !important;
+        height: 140px !important;
+        font-size: 30px !important;
         font-weight: 900 !important;
         border-radius: 22px !important;
         color: #FFFFFF !important;
-        opacity: 1 !important;
     }
-
-    /* 음성 느리게: 파란색 */
     div.st-key-slow_btn button {
         background: #0055FF !important;
-        background-color: #0055FF !important;
-        color: #FFFFFF !important;
         border: 5px solid #003399 !important;
     }
-
-    /* 음성 빠르게: 빨간색 */
     div.st-key-fast_btn button {
         background: #FF0000 !important;
-        background-color: #FF0000 !important;
-        color: #FFFFFF !important;
         border: 5px solid #990000 !important;
     }
-
+    /* 상단 안내 버튼들 */
+    div.st-key-usage_btn button {
+        background: #7B2CBF !important;
+        color: white !important;
+        font-size: 26px !important;
+        font-weight: 900 !important;
+        min-height: 75px !important;
+        border-radius: 20px !important;
+        border: 5px solid #4A148C !important;
+    }
+    div.st-key-feat1_btn button, div.st-key-feat2_btn button {
+        font-size: 22px !important;
+        font-weight: 800 !important;
+        min-height: 60px !important;
+        border-radius: 15px !important;
+    }
     /* 기능 설명 카드 */
     .feature-card {
         background-color: #F5F8FF;
@@ -116,97 +116,40 @@ st.markdown(
         margin-bottom: 20px;
         text-align: center;
     }
-
     .feature-title {
-        color: #000000;
         font-size: 36px;
         font-weight: 900;
-        line-height: 1.5;
         margin-bottom: 25px;
     }
-
     .feature-description {
-        color: #111111;
         font-size: 25px;
         line-height: 1.8;
         font-weight: 700;
     }
-
-    /* 기능 페이지 이동 버튼 공통 디자인 */
+    /* 페이지 이동 버튼 */
     div[data-testid="stPageLink"] a {
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
         width: 100% !important;
         min-height: 120px !important;
-        box-sizing: border-box !important;
         padding: 24px !important;
-        margin-top: 15px !important;
-        margin-bottom: 20px !important;
         border: 5px solid #222222 !important;
         border-radius: 22px !important;
         font-size: 30px !important;
         font-weight: 900 !important;
-        line-height: 1.5 !important;
-        text-align: center !important;
         text-decoration: none !important;
-        box-shadow: 0 6px 0 rgba(0, 0, 0, 0.35) !important;
     }
-
-    /* 기능 페이지 버튼 내부 글자 */
     div[data-testid="stPageLink"] a p {
         font-size: 30px !important;
         font-weight: 900 !important;
-        line-height: 1.5 !important;
         margin: 0 !important;
     }
-
-    /* 하단 안내 버튼 */
-    div.st-key-prev_btn button,
-    div.st-key-replay_btn button,
-    div.st-key-next_btn button {
-        min-height: 80px !important;
-        font-size: 23px !important;
-        font-weight: 800 !important;
-        border: 3px solid #222222 !important;
-        border-radius: 15px !important;
-    }
-
-    /* 현재 안내 상태 */
     .status-text {
         text-align: center;
         font-size: 22px;
         font-weight: 800;
-        color: #111111;
-        padding: 12px;
-    }
-
-    /* 모바일 화면 */
-    @media (max-width: 768px) {
-        div.st-key-slow_btn button,
-        div.st-key-fast_btn button {
-            font-size: 24px !important;
-            min-height: 120px !important;
-            height: 120px !important;
-        }
-
-        .feature-title {
-            font-size: 28px;
-        }
-
-        .feature-description {
-            font-size: 21px;
-        }
-
-        div[data-testid="stPageLink"] a {
-            min-height: 100px !important;
-            padding: 18px !important;
-            font-size: 23px !important;
-        }
-
-        div[data-testid="stPageLink"] a p {
-            font-size: 23px !important;
-        }
+        padding: 10px;
     }
     </style>
     """,
@@ -214,7 +157,7 @@ st.markdown(
 )
 
 
-# 6. 페이지 제목
+# 6. 페이지 제목 및 상태 표시
 st.title("🚌 시각장애인 버스 탑승 보조 시스템")
 
 st.markdown(
@@ -229,176 +172,41 @@ st.markdown(
 )
 
 
-# 앱 사용법 음성 안내 버튼 (현재 설정된 speech_rate 반영)
-usage_button_html = f"""
-<div style="width:100%; padding:2px 0 6px 0;">
-    <button id="app-usage-button" type="button"
-        style="
-            width:100%;
-            min-height:70px;
-            background:#7B2CBF;
-            color:white;
-            border:5px solid #4A148C;
-            border-radius:20px;
-            font-size:26px;
-            font-weight:900;
-            cursor:pointer;
-        ">
-        🔊 앱 사용법 듣기
-    </button>
-</div>
-<script>
-(() => {{
-    const button = document.getElementById("app-usage-button");
-    if (!button) return;
+# 7. 상단 음성 안내 버튼들 (앱 사용법 / 기능 1 / 기능 2)
+if st.button("🔊 앱 사용법 듣기", key="usage_btn", use_container_width=True):
+    speak_text(app_usage_text, st.session_state.speech_rate)
 
-    button.addEventListener("click", () => {{
-        if (!("speechSynthesis" in window)) {{
-            button.innerText = "이 브라우저는 음성 안내를 지원하지 않습니다.";
-            return;
-        }}
-
-        const synth = window.speechSynthesis;
-        synth.cancel();
-        synth.resume();
-
-        const sentences = {json.dumps(app_usage_sentences, ensure_ascii=False)};
-        const rate = {st.session_state.speech_rate};
-        let index = 0;
-
-        button.innerText = "🔊 앱 사용법 재생 중...";
-
-        function playNext() {{
-            if (index >= sentences.length) {{
-                button.innerText = "🔊 앱 사용법 다시 듣기";
-                return;
-            }}
-
-            const utterance = new SpeechSynthesisUtterance(sentences[index]);
-            utterance.lang = "ko-KR";
-            utterance.rate = rate;
-
-            utterance.onend = () => {{
-                index++;
-                playNext();
-            }};
-
-            utterance.onerror = () => {{
-                index++;
-                playNext();
-            }};
-
-            synth.speak(utterance);
-        }}
-
-        playNext();
-    }});
-}})();
-</script>
-"""
-
-components.html(usage_button_html, height=90, width=None)
-
-
-# 8. 기능 1, 2 안내 데이터 정의
-step_data = {
-    1: {
-        "title": "1️⃣ 기능 1: 목적지 기반 버스 안내",
-        "description": (
-            "목적지를 입력하면 가장 적합한 버스를 안내해 줍니다."
-        ),
-        "script": (
-            "기능 1번 안내입니다. "
-            "목적지를 입력하면 가장 적합한 버스를 안내해 줍니다. "
-            "기능 1 페이지로 이동하려면 노란색 기능 1 버튼을 눌러주세요."
-        )
-    },
-    2: {
-        "title": "2️⃣ 기능 2: 카메라를 이용한 버스 번호 인식",
-        "description": (
-            "카메라로 버스를 비추면 버스 번호를 인식하여 "
-            "몇 번 버스인지 알려줍니다."
-        ),
-        "script": (
-            "기능 2번 안내입니다. "
-            "카메라로 버스를 비추면 버스 번호를 인식하여 "
-            "몇 번 버스인지 알려줍니다. "
-            "기능 2 페이지로 이동하려면 초록색 기능 2 버튼을 눌러주세요."
-        )
-    }
-}
-
-
-# 앱 사용법 밑에 기능 1, 기능 2 안내 듣기 버튼 배치
-col_feat1, col_feat2 = st.columns(2)
-
-with col_feat1:
-    if st.button("📢 기능 1 안내 듣기", use_container_width=True):
+col_f1, col_f2 = st.columns(2)
+with col_f1:
+    if st.button("📢 기능 1 안내 듣기", key="feat1_btn", use_container_width=True):
         speak_text(step_data[1]["script"], st.session_state.speech_rate)
-
-with col_feat2:
-    if st.button("📢 기능 2 안내 듣기", use_container_width=True):
+with col_f2:
+    if st.button("📢 기능 2 안내 듣기", key="feat2_btn", use_container_width=True):
         speak_text(step_data[2]["script"], st.session_state.speech_rate)
 
 
-# 7. 음성 속도 조절 버튼 (클릭 시 실시간 배속 반영 및 새로고침)
-col_left, col_right = st.columns(2)
+# 8. 음성 속도 조절 버튼 (파란색: 느리게, 빨간색: 빠르게)
+col_slow, col_fast = st.columns(2)
 
-with col_left:
-    if st.button(
-        "🐢 음성 느리게",
-        key="slow_btn",
-        use_container_width=True
-    ):
-        st.session_state.speech_rate = max(
-            0.5,
-            round(st.session_state.speech_rate - 0.25, 2)
-        )
+with col_slow:
+    if st.button("🐢 음성 느리게", key="slow_btn", use_container_width=True):
+        st.session_state.speech_rate = max(0.5, round(st.session_state.speech_rate - 0.25, 2))
         st.rerun()
 
-with col_right:
-    if st.button(
-        "⚡ 음성 빠르게",
-        key="fast_btn",
-        use_container_width=True
-    ):
-        st.session_state.speech_rate = min(
-            2.0,
-            round(st.session_state.speech_rate + 0.25, 2)
-        )
+with col_fast:
+    if st.button("⚡ 음성 빠르게", key="fast_btn", use_container_width=True):
+        st.session_state.speech_rate = min(2.0, round(st.session_state.speech_rate + 0.25, 2))
         st.rerun()
 
 
 st.markdown("---")
 
 
-# 9. 현재 기능 단계 확인 및 기능 설명 음성 강제 출력 트리거
+# 9. 현재 단계별 카드 및 페이지 링크 출력
 step = st.session_state.current_step
-
-if step not in step_data:
-    st.session_state.current_step = 1
-    step = 1
-
 current_info = step_data[step]
 
-# 초기 자동 전환 시간 설정
-if st.session_state.auto_next_at is None:
-    st.session_state.auto_next_at = time.time() + get_speech_duration(
-        current_info["script"],
-        st.session_state.speech_rate
-    )
-
-# 단계가 변경되었을 때 또는 첫 로드 시 기능 설명 음성 출력
-if st.session_state.last_spoken_step != step:
-    st.session_state.last_spoken_step = step
-    speak_text(current_info["script"], st.session_state.speech_rate)
-    st.session_state.auto_next_at = time.time() + get_speech_duration(
-        current_info["script"],
-        st.session_state.speech_rate
-    )
-
-
-# 기능 설명 카드 렌더링
+# 기능 설명 카드
 st.markdown(
     f"""
     <div class="feature-card">
@@ -413,10 +221,8 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
-# 10. 기능별 이동 버튼 색상 및 링크 설정
+# 기능별 이동 버튼 색상 설정 및 링크
 if step == 1:
-    # 기능 1: 노란색 배경 + 검은색 글씨
     st.markdown(
         """
         <style>
@@ -425,39 +231,20 @@ if step == 1:
             color: #000000 !important;
             border-color: #8A6500 !important;
         }
-
         div[data-testid="stPageLink"] a p {
             color: #000000 !important;
-        }
-
-        div[data-testid="stPageLink"] a:hover {
-            background-color: #FFC400 !important;
-            color: #000000 !important;
-            border-color: #5C4300 !important;
-        }
-
-        div[data-testid="stPageLink"] a:hover p {
-            color: #000000 !important;
-        }
-
-        div[data-testid="stPageLink"] a:focus-visible {
-            outline: 5px solid #0057D9 !important;
-            outline-offset: 5px !important;
         }
         </style>
         """,
         unsafe_allow_html=True
     )
-
     st.page_link(
         "pages/우선순위.py",
         label="기능 1: 목적지 입력 및 버스 안내 페이지로 이동하기",
         icon="🚌",
         use_container_width=True
     )
-
 else:
-    # 기능 2: 초록색 배경 + 흰색 글씨
     st.markdown(
         """
         <style>
@@ -466,30 +253,13 @@ else:
             color: #FFFFFF !important;
             border-color: #004D2A !important;
         }
-
         div[data-testid="stPageLink"] a p {
             color: #FFFFFF !important;
-        }
-
-        div[data-testid="stPageLink"] a:hover {
-            background-color: #005C31 !important;
-            color: #FFFFFF !important;
-            border-color: #00351C !important;
-        }
-
-        div[data-testid="stPageLink"] a:hover p {
-            color: #FFFFFF !important;
-        }
-
-        div[data-testid="stPageLink"] a:focus-visible {
-            outline: 5px solid #FFB000 !important;
-            outline-offset: 5px !important;
         }
         </style>
         """,
         unsafe_allow_html=True
     )
-
     st.page_link(
         "pages/카메라 인식 시스템.py",
         label="기능 2: 카메라 버스 번호 인식 페이지로 이동하기",
@@ -498,66 +268,21 @@ else:
     )
 
 
-# 11. 이전 안내 / 다시 듣기 / 다음 안내 버튼
+# 10. 하단 제어 버튼 (이전 안내 / 다시 듣기 / 다음 안내)
 col_prev, col_replay, col_next = st.columns(3)
 
 with col_prev:
-    if st.button(
-        "⬅️ 이전 안내",
-        key="prev_btn",
-        use_container_width=True
-    ):
-        st.session_state.current_step = (
-            2 if st.session_state.current_step == 1 else 1
-        )
-        st.session_state.auto_next_at = time.time() + 12
+    if st.button("⬅️ 이전 안내", key="prev_btn", use_container_width=True):
+        st.session_state.current_step = 2 if st.session_state.current_step == 1 else 1
+        speak_text(step_data[st.session_state.current_step]["script"], st.session_state.speech_rate)
         st.rerun()
 
 with col_replay:
-    if st.button(
-        "🔊 다시 듣기",
-        key="replay_btn",
-        use_container_width=True
-    ):
-        speak_text(
-            current_info["script"],
-            st.session_state.speech_rate
-        )
+    if st.button("🔊 다시 듣기", key="replay_btn", use_container_width=True):
+        speak_text(current_info["script"], st.session_state.speech_rate)
 
 with col_next:
-    if st.button(
-        "다음 안내 ➡️",
-        key="next_btn",
-        use_container_width=True
-    ):
-        st.session_state.current_step = (
-            2 if st.session_state.current_step == 1 else 1
-        )
-        st.session_state.auto_next_at = time.time() + 12
+    if st.button("다음 안내 ➡️", key="next_btn", use_container_width=True):
+        st.session_state.current_step = 2 if st.session_state.current_step == 1 else 1
+        speak_text(step_data[st.session_state.current_step]["script"], st.session_state.speech_rate)
         st.rerun()
-
-
-# 12. 자동 단계 전환 루프
-@st.fragment(run_every=1)
-def auto_step_transition():
-    if not st.session_state.auto_play:
-        return
-
-    if st.session_state.auto_next_at is None:
-        return
-
-    if time.time() >= st.session_state.auto_next_at:
-        st.session_state.current_step = (
-            2 if st.session_state.current_step == 1 else 1
-        )
-        st.session_state.auto_next_at = (
-            time.time()
-            + get_speech_duration(
-                step_data[st.session_state.current_step]["script"],
-                st.session_state.speech_rate
-            )
-        )
-        st.rerun()
-
-
-auto_step_transition()
