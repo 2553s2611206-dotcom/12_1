@@ -211,17 +211,17 @@ st.markdown(
 
 
 # 6. 음성 속도 조절 버튼
-# 추가된 부분: 버튼 위에 '블라블라' 표시
+# 안내 문구 글씨 크기: 24px
 st.markdown(
     """
     <div style="
         text-align: center;
-        font-size: 30px;
+        font-size: 24px;
         font-weight: 900;
         color: #000000;
         margin-bottom: 15px;
     ">
-        이 앱은 시각장애인들의 버스 이용을 위한 앱입니다. 
+        이 앱은 시각장애인들의 버스 이용을 위한 앱입니다.
         안내를 듣고 해당기능을 원하신다면 밑에 색깔 버튼을 눌러주세요.
     </div>
     """,
