@@ -211,6 +211,22 @@ st.markdown(
 
 
 # 6. 음성 속도 조절 버튼
+# 추가된 부분: 버튼 위에 '블라블라' 표시
+st.markdown(
+    """
+    <div style="
+        text-align: center;
+        font-size: 30px;
+        font-weight: 900;
+        color: #000000;
+        margin-bottom: 15px;
+    ">
+        블라블라
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 col_left, col_right = st.columns(2)
 
 with col_left:
