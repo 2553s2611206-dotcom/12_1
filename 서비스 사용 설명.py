@@ -22,18 +22,6 @@ if "current_step" not in st.session_state:
 if "auto_play" not in st.session_state:
     st.session_state.auto_play = True
 
-if "intro_played" not in st.session_state:
-    st.session_state.intro_played = False
-
-if "intro_just_started" not in st.session_state:
-    st.session_state.intro_just_started = False
-
-if "auto_next_at" not in st.session_state:
-    st.session_state.auto_next_at = None
-
-if "last_spoken_step" not in st.session_state:
-    st.session_state.last_spoken_step = st.session_state.current_step
-
 
 # 3. 음성 안내 함수
 def speak_text(text, rate=1.0):
@@ -56,29 +44,7 @@ def speak_text(text, rate=1.0):
     components.html(html_code, height=0, width=0)
 
 
-# 4. 앱 전체 소개 음성 내용
-app_intro = (
-    "안녕하세요. 시각장애인 버스 탑승 보조 시스템입니다. "
-    "이 앱은 시각장애인이 버스를 더욱 편리하고 안전하게 이용할 수 있도록 "
-    "도움을 주기 위해 만들어졌습니다. "
-    "먼저 음성의 속도가 너무 빠르면 파란색 버튼을 눌러주세요. "
-    "그리고 음성의 속도가 너무 느리면 빨간색 버튼을 눌러주세요. "
-    "이 앱에서는 두가지의 기능이 있습니다.  "
-    "잠시후 설명을 할텐데 지금 설명하는 기능이 내가 찾는 기능이다 싶을 때 밑의 색깔 버튼을 누르세요. "
-    "음성을 놓쳐 버튼을 누르지 못하셨다면 조금 기다리시면 됩니다. "
-    "목적지에 편히 도달하시길 바랍니다. "
-    "안내를 시작하겠습니다. "
-
-)
-
-
-# 음성 안내 문장 길이에 따라 자동 단계 전환 시간 계산
-def get_speech_duration(text, rate=1.0):
-    safe_rate = max(float(rate), 0.5)
-    return max(12, len(text) * 0.22 / safe_rate + 3)
-
-
-# 5. 전체 CSS 디자인
+# 4. 전체 CSS 디자인
 st.markdown(
     """
     <style>
@@ -121,7 +87,7 @@ st.markdown(
         border: 5px solid #990000 !important;
     }
 
-    /* 기능 설명 카드 */
+    /* 기능 안내 카드 */
     .feature-card {
         background-color: #F5F8FF;
         border: 4px solid #222222;
@@ -147,36 +113,64 @@ st.markdown(
         font-weight: 700;
     }
 
-    /* 기능 페이지 이동 버튼 공통 디자인 */
+    /* 기능 1, 2 페이지 이동 버튼 */
     div[data-testid="stPageLink"] a {
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
+
         width: 100% !important;
         min-height: 120px !important;
         box-sizing: border-box !important;
+
         padding: 24px !important;
         margin-top: 15px !important;
         margin-bottom: 20px !important;
-        border: 5px solid #222222 !important;
+
+        background: #0057D9 !important;
+        background-color: #0057D9 !important;
+        color: #FFFFFF !important;
+
+        border: 5px solid #003580 !important;
         border-radius: 22px !important;
+
         font-size: 30px !important;
         font-weight: 900 !important;
         line-height: 1.5 !important;
         text-align: center !important;
         text-decoration: none !important;
-        box-shadow: 0 6px 0 rgba(0, 0, 0, 0.35) !important;
+
+        box-shadow: 0 6px 0 #00245C !important;
     }
 
-    /* 기능 페이지 버튼 내부 글자 */
+    /* 버튼 내부 텍스트 */
     div[data-testid="stPageLink"] a p {
+        color: #FFFFFF !important;
         font-size: 30px !important;
         font-weight: 900 !important;
         line-height: 1.5 !important;
         margin: 0 !important;
     }
 
-    /* 하단 안내 버튼 */
+    /* 마우스를 올렸을 때 */
+    div[data-testid="stPageLink"] a:hover {
+        background: #003FA8 !important;
+        background-color: #003FA8 !important;
+        color: #FFFFFF !important;
+        border-color: #001F5C !important;
+    }
+
+    div[data-testid="stPageLink"] a:hover p {
+        color: #FFFFFF !important;
+    }
+
+    /* 키보드 포커스 */
+    div[data-testid="stPageLink"] a:focus-visible {
+        outline: 5px solid #FFB000 !important;
+        outline-offset: 5px !important;
+    }
+
+    /* 하단 이전, 다시 듣기, 다음 버튼 */
     div.st-key-prev_btn button,
     div.st-key-replay_btn button,
     div.st-key-next_btn button {
@@ -229,7 +223,7 @@ st.markdown(
 )
 
 
-# 6. 페이지 제목
+# 5. 페이지 제목
 st.title("🚌 시각장애인 버스 탑승 보조 시스템")
 
 st.markdown(
@@ -244,94 +238,7 @@ st.markdown(
 )
 
 
-# 앱 소개 음성 안내 버튼
-# iframe 안의 실제 버튼 클릭 이벤트에서 음성을 실행하여
-# 브라우저의 자동 재생 제한에 걸릴 가능성을 줄임
-intro_button_html = """
-<div style="width:100%; padding:2px 0 12px 0;">
-    <button id="app-intro-button" type="button"
-        style="
-            width:100%;
-            min-height:78px;
-            background:#7B2CBF;
-            color:white;
-            border:5px solid #4A148C;
-            border-radius:20px;
-            font-size:29px;
-            font-weight:900;
-            cursor:pointer;
-        ">
-        🔊 앱 소개 듣기
-    </button>
-</div>
-<script>
-(() => {
-    const button = document.getElementById("app-intro-button");
-    if (!button) return;
-
-    button.addEventListener("click", () => {
-        if (!("speechSynthesis" in window)) {
-            button.innerText = "이 브라우저는 음성 안내를 지원하지 않습니다.";
-            return;
-        }
-
-        const synth = window.speechSynthesis;
-        synth.cancel();
-        synth.resume();
-
-        const introUtterance = new SpeechSynthesisUtterance(__APP_INTRO__);
-        const featureUtterance = new SpeechSynthesisUtterance(__FEATURE_ONE__);
-
-        introUtterance.lang = "ko-KR";
-        featureUtterance.lang = "ko-KR";
-        introUtterance.rate = __SPEECH_RATE__;
-        featureUtterance.rate = __SPEECH_RATE__;
-
-        // 앱 소개가 끝난 직후 기능 1 설명을 이어서 재생
-        introUtterance.onend = () => {
-            synth.speak(featureUtterance);
-        };
-
-        button.innerText = "🔊 앱 소개 및 기능 안내 재생 중";
-        featureUtterance.onend = () => {
-            button.innerText = "🔊 앱 소개 다시 듣기";
-        };
-
-        synth.speak(introUtterance);
-    });
-})();
-</script>
-"""
-
-intro_text = (
-    "안녕하세요. 시각장애인 버스 탑승 보조 시스템입니다. "
-    "이 앱은 시각장애인이 버스를 더욱 편리하고 안전하게 이용할 수 있도록 "
-    "도움을 주기 위해 만들어졌습니다. "
-    "먼저 음성의 속도가 너무 빠르면 파란색 버튼을 눌러주세요. "
-    "그리고 음성의 속도가 너무 느리면 빨간색 버튼을 눌러주세요. "
-    "이 앱에서는 두가지의 기능이 있습니다.  "
-    "잠시후 설명을 할텐데 지금 설명하는 기능이 내가 찾는 기능이다 싶을 때 밑의 색깔 버튼을 누르세요. "
-    "음성을 놓쳐 버튼을 누르지 못하셨다면 조금 기다리시면 됩니다. "
-    "목적지에 편히 도달하시길 바랍니다. "
-    "안내를 시작하겠습니다. "
-)
-feature_one_text = (
-    "기능 1번 안내입니다. "
-    "목적지를 입력하면 가장 적합한 버스를 안내해 줍니다. "
-    "기능 1 페이지로 이동하려면 기능 1 버튼을 눌러주세요."
-)
-
-intro_button_html = (
-    intro_button_html
-    .replace("__APP_INTRO__", json.dumps(intro_text, ensure_ascii=False))
-    .replace("__FEATURE_ONE__", json.dumps(feature_one_text, ensure_ascii=False))
-    .replace("__SPEECH_RATE__", str(st.session_state.speech_rate))
-)
-
-components.html(intro_button_html, height=100, width=None)
-
-
-# 7. 음성 속도 조절 버튼
+# 6. 음성 속도 조절 버튼
 col_left, col_right = st.columns(2)
 
 with col_left:
@@ -362,7 +269,7 @@ with col_right:
 st.markdown("---")
 
 
-# 8. 기능 1, 2 안내 데이터
+# 7. 기능 1, 2 안내 데이터
 step_data = {
     1: {
         "title": "1️⃣ 기능 1: 목적지 기반 버스 안내",
@@ -391,7 +298,7 @@ step_data = {
 }
 
 
-# 9. 현재 기능 표시
+# 8. 현재 기능 표시
 step = st.session_state.current_step
 
 if step not in step_data:
@@ -400,37 +307,13 @@ if step not in step_data:
 
 current_info = step_data[step]
 
+# 현재 기능 음성 안내
+speak_text(
+    current_info["script"],
+    st.session_state.speech_rate
+)
 
-# 앱 소개는 위쪽 보라색 버튼을 눌렀을 때만 재생
-# 앱 소개가 끝나면 버튼 내부에서 기능 1 설명이 바로 이어서 재생됨.
-# 자동 단계 전환 시간은 앱 소개와 기능 1 안내 길이를 기준으로 설정.
-if st.session_state.auto_next_at is None:
-    first_voice_script = app_intro + " " + step_data[1]["script"]
-    st.session_state.auto_next_at = time.time() + get_speech_duration(
-        first_voice_script,
-        st.session_state.speech_rate
-    )
-
-# 처음 화면에서는 자동 음성을 실행하지 않음.
-# 기능 단계가 변경되었을 때에만 해당 기능의 음성 안내를 실행.
-if "last_spoken_step" not in st.session_state:
-    st.session_state.last_spoken_step = step
-
-elif st.session_state.last_spoken_step != step:
-    st.session_state.last_spoken_step = step
-
-    speak_text(
-        current_info["script"],
-        st.session_state.speech_rate
-    )
-
-    st.session_state.auto_next_at = time.time() + get_speech_duration(
-        current_info["script"],
-        st.session_state.speech_rate
-    )
-
-
-# 기능 설명 카드
+# 설명 카드
 st.markdown(
     f"""
     <div class="feature-card">
@@ -446,82 +329,16 @@ st.markdown(
 )
 
 
-# 10. 기능별 이동 버튼 색상
+# 9. 기능 페이지 이동 버튼
+# GitHub의 pages 폴더 안에 있는 실제 파일 경로 사용
 if step == 1:
-    # 기능 1: 노란색 배경 + 검은색 글씨
-    st.markdown(
-        """
-        <style>
-        div[data-testid="stPageLink"] a {
-            background-color: #FFD600 !important;
-            color: #000000 !important;
-            border-color: #8A6500 !important;
-        }
-
-        div[data-testid="stPageLink"] a p {
-            color: #000000 !important;
-        }
-
-        div[data-testid="stPageLink"] a:hover {
-            background-color: #FFC400 !important;
-            color: #000000 !important;
-            border-color: #5C4300 !important;
-        }
-
-        div[data-testid="stPageLink"] a:hover p {
-            color: #000000 !important;
-        }
-
-        div[data-testid="stPageLink"] a:focus-visible {
-            outline: 5px solid #0057D9 !important;
-            outline-offset: 5px !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
     st.page_link(
         "pages/우선순위.py",
         label="기능 1: 목적지 입력 및 버스 안내 페이지로 이동하기",
         icon="🚌",
         use_container_width=True
     )
-
 else:
-    # 기능 2: 초록색 배경 + 흰색 글씨
-    st.markdown(
-        """
-        <style>
-        div[data-testid="stPageLink"] a {
-            background-color: #008044 !important;
-            color: #FFFFFF !important;
-            border-color: #004D2A !important;
-        }
-
-        div[data-testid="stPageLink"] a p {
-            color: #FFFFFF !important;
-        }
-
-        div[data-testid="stPageLink"] a:hover {
-            background-color: #005C31 !important;
-            color: #FFFFFF !important;
-            border-color: #00351C !important;
-        }
-
-        div[data-testid="stPageLink"] a:hover p {
-            color: #FFFFFF !important;
-        }
-
-        div[data-testid="stPageLink"] a:focus-visible {
-            outline: 5px solid #FFB000 !important;
-            outline-offset: 5px !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
     st.page_link(
         "pages/카메라 인식 시스템.py",
         label="기능 2: 카메라 버스 번호 인식 페이지로 이동하기",
@@ -530,7 +347,7 @@ else:
     )
 
 
-# 11. 이전 안내 / 다시 듣기 / 다음 안내
+# 10. 이전 안내 / 다시 듣기 / 다음 안내
 col_prev, col_replay, col_next = st.columns(3)
 
 with col_prev:
@@ -542,7 +359,6 @@ with col_prev:
         st.session_state.current_step = (
             2 if st.session_state.current_step == 1 else 1
         )
-        st.session_state.auto_next_at = time.time() + 12
         st.rerun()
 
 with col_replay:
@@ -565,35 +381,16 @@ with col_next:
         st.session_state.current_step = (
             2 if st.session_state.current_step == 1 else 1
         )
-        st.session_state.auto_next_at = time.time() + 12
         st.rerun()
 
 
-# 12. 자동 단계 전환
-# time.sleep()을 사용하지 않아 화면이 멈추거나
-# 중복된 화면이 희미하게 남는 현상을 방지
+# 11. 자동 단계 전환: 기능 1 ↔ 기능 2
+if st.session_state.auto_play:
+    WAIT_TIME = 12
+    time.sleep(WAIT_TIME)
 
-@st.fragment(run_every=1)
-def auto_step_transition():
-
-    if not st.session_state.auto_play:
-        return
-
-    if st.session_state.auto_next_at is None:
-        return
-
-    if time.time() >= st.session_state.auto_next_at:
-
+    if st.session_state.current_step == step:
         st.session_state.current_step = (
-            2 if st.session_state.current_step == 1 else 1
+            2 if step == 1 else 1
         )
-
-        st.session_state.intro_just_started = False
-
-        # 다음 자동 전환까지 12초 설정
-        st.session_state.auto_next_at = time.time() + 12
-
         st.rerun()
-
-
-auto_step_transition()
