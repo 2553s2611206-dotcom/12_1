@@ -49,7 +49,7 @@ def speak_text(text, rate=1.0):
     components.html(html_code, height=0, width=0)
 
 
-# 4. 짧아진 앱 사용법 음성 내용 (문장별 배열 큐)
+# 4. 앱 사용법 안내 멘트 (짧은 버전)
 app_usage_sentences = [
     "앱 사용법을 안내합니다.",
     "음성이 너무 느리면 파란색 버튼을, 빠르면 빨간색 버튼을 눌러주세요.",
@@ -341,7 +341,7 @@ step_data = {
         "script": (
             "기능 1번 안내입니다. "
             "목적지를 입력하면 가장 적합한 버스를 안내해 줍니다. "
-            "기능 1 페이지로 이동하려면 기능 1 버튼을 눌러주세요."
+            "기능 1 페이지로 이동하려면 노란색 기능 1 버튼을 눌러주세요."
         )
     },
     2: {
@@ -354,7 +354,7 @@ step_data = {
             "기능 2번 안내입니다. "
             "카메라로 버스를 비추면 버스 번호를 인식하여 "
             "몇 번 버스인지 알려줍니다. "
-            "기능 2 페이지로 이동하려면 기능 2 버튼을 눌러주세요."
+            "기능 2 페이지로 이동하려면 초록색 기능 2 버튼을 눌러주세요."
         )
     }
 }
@@ -376,11 +376,8 @@ if st.session_state.auto_next_at is None:
         st.session_state.speech_rate
     )
 
-# 처음 실행되거나 단계/배속이 바뀔 때 기능 페이지 설명 음성이 확실히 나오도록 처리
-if (
-    st.session_state.last_spoken_step != step
-    or st.session_state.last_spoken_step is None
-):
+# 단계가 변경되었을 때 또는 첫 로드 시 기능 설명 음성 출력
+if st.session_state.last_spoken_step != step:
     st.session_state.last_spoken_step = step
     speak_text(current_info["script"], st.session_state.speech_rate)
     st.session_state.auto_next_at = time.time() + get_speech_duration(
