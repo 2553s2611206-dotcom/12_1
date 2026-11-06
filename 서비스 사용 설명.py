@@ -231,16 +231,16 @@ st.markdown(
 
 # 앱 사용법 음성 안내 버튼 (현재 설정된 speech_rate 반영)
 usage_button_html = f"""
-<div style="width:100%; padding:2px 0 12px 0;">
+<div style="width:100%; padding:2px 0 6px 0;">
     <button id="app-usage-button" type="button"
         style="
             width:100%;
-            min-height:78px;
+            min-height:70px;
             background:#7B2CBF;
             color:white;
             border:5px solid #4A148C;
             border-radius:20px;
-            font-size:29px;
+            font-size:26px;
             font-weight:900;
             cursor:pointer;
         ">
@@ -297,7 +297,48 @@ usage_button_html = f"""
 </script>
 """
 
-components.html(usage_button_html, height=100, width=None)
+components.html(usage_button_html, height=90, width=None)
+
+
+# 8. 기능 1, 2 안내 데이터 정의
+step_data = {
+    1: {
+        "title": "1️⃣ 기능 1: 목적지 기반 버스 안내",
+        "description": (
+            "목적지를 입력하면 가장 적합한 버스를 안내해 줍니다."
+        ),
+        "script": (
+            "기능 1번 안내입니다. "
+            "목적지를 입력하면 가장 적합한 버스를 안내해 줍니다. "
+            "기능 1 페이지로 이동하려면 노란색 기능 1 버튼을 눌러주세요."
+        )
+    },
+    2: {
+        "title": "2️⃣ 기능 2: 카메라를 이용한 버스 번호 인식",
+        "description": (
+            "카메라로 버스를 비추면 버스 번호를 인식하여 "
+            "몇 번 버스인지 알려줍니다."
+        ),
+        "script": (
+            "기능 2번 안내입니다. "
+            "카메라로 버스를 비추면 버스 번호를 인식하여 "
+            "몇 번 버스인지 알려줍니다. "
+            "기능 2 페이지로 이동하려면 초록색 기능 2 버튼을 눌러주세요."
+        )
+    }
+}
+
+
+# 앱 사용법 밑에 기능 1, 기능 2 안내 듣기 버튼 배치
+col_feat1, col_feat2 = st.columns(2)
+
+with col_feat1:
+    if st.button("📢 기능 1 안내 듣기", use_container_width=True):
+        speak_text(step_data[1]["script"], st.session_state.speech_rate)
+
+with col_feat2:
+    if st.button("📢 기능 2 안내 듣기", use_container_width=True):
+        speak_text(step_data[2]["script"], st.session_state.speech_rate)
 
 
 # 7. 음성 속도 조절 버튼 (클릭 시 실시간 배속 반영 및 새로고침)
@@ -329,35 +370,6 @@ with col_right:
 
 
 st.markdown("---")
-
-
-# 8. 기능 1, 2 안내 데이터 정의
-step_data = {
-    1: {
-        "title": "1️⃣ 기능 1: 목적지 기반 버스 안내",
-        "description": (
-            "목적지를 입력하면 가장 적합한 버스를 안내해 줍니다."
-        ),
-        "script": (
-            "기능 1번 안내입니다. "
-            "목적지를 입력하면 가장 적합한 버스를 안내해 줍니다. "
-            "기능 1 페이지로 이동하려면 노란색 기능 1 버튼을 눌러주세요."
-        )
-    },
-    2: {
-        "title": "2️⃣ 기능 2: 카메라를 이용한 버스 번호 인식",
-        "description": (
-            "카메라로 버스를 비추면 버스 번호를 인식하여 "
-            "몇 번 버스인지 알려줍니다."
-        ),
-        "script": (
-            "기능 2번 안내입니다. "
-            "카메라로 버스를 비추면 버스 번호를 인식하여 "
-            "몇 번 버스인지 알려줍니다. "
-            "기능 2 페이지로 이동하려면 초록색 기능 2 버튼을 눌러주세요."
-        )
-    }
-}
 
 
 # 9. 현재 기능 단계 확인 및 기능 설명 음성 강제 출력 트리거
